@@ -6,6 +6,83 @@
 using namespace std;
 
 
+
+
+/*
+int getRegisterIdOrIntermediateValue(string register_name)
+
+	
+	this will return an integer between 0 and 32
+
+	if register_name == "sp"
+		return 31
+	if the register name says like "x12" then you will return 12
+	if the register name says like "x22" then you will return 22
+
+
+	if the register name says like "xzr" then you will return 32
+	if the register name says like "lr" then you will return 30   (link register)
+
+
+	"x12" is encoded in ascii so you will have to convert the ascii value of "1", and "2" to 1 and 2
+
+	have it also get intermediate values like "#234562" -> 234562
+
+*/
+
+/*
+
+assumes you already converted from ascii
+the array contains only integers
+take an array [2, 3, 4, 5, 6, 2] and return 234562
+iterations of algorithm
+
+start with 2
+20 + 3 = 23
+230 + 4 = 234
+
+
+
+
+
+
+registers[getRegisterIdOrIntermediateValue("sp")]
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 string getRidOfCharacter(string input, char character_to_remove)
 {
 	string new_string;
@@ -236,12 +313,13 @@ int main()
 			int location = gotos.at(tests_token_lines.at(i)->at(1));
 			cout << "->jump to " << tests_token_lines.at(location)->at(0) << " "<< tests_token_lines.at(location)->at(1) << " when flags say equal" << endl;
 			// run a function called b.eq to affect the memory and registers however the instruction says
-			// bEQ(split_test_i, mem, registers)
+			// b(split_test_i, mem, registers)
 		}
 		else if(tests_token_lines.at(i)->at(0) == "add")
 		{
 			cout << "->add instruction" << endl;
 			cout << "->add p1 and p2 and store the result in p0" << endl;
+			// add(split_test_i, mem, registers)
 
 		}
 		else if(tests_token_lines.at(i)->at(0) == "addi")
@@ -259,5 +337,12 @@ int main()
 		cout << i->first << " => " << i->second << " " << tests[i->second] << endl;
 	}*/
 	cout << endl;
+
+	/*
+	idea for nested functions
+	stur to stack pointer pushes things to stack
+	b label adjusts the stack pointer to make a new stack
+	bl link_register to reset the stack register
+	*/
 	return 0;
 }
