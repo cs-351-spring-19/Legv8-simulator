@@ -42,6 +42,8 @@ start with 2
 230 + 4 = 234
 
 
+you can do this directly from the string by taking each ascii char and subtracting 48 from it(I think the value is 48)
+no need to use an integer array
 
 
 
