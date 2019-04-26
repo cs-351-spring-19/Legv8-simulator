@@ -53,6 +53,13 @@ registers[getRegisterIdOrIntermediateValue("sp")]
 */
 
 
+/*
+
+subi sp, sp, #number will need to record the distance from the sp to the new sp
+so b lr can go back to sp's original location in stack
+*/
+
+
 
 
 
@@ -120,7 +127,7 @@ deque<string>* tokenize(string input, string commands[])
 		// collect and bump up j
 		bool found = false;
 
-		for(int i = 0; i < 15; i++)
+		for(int i = 0; i < 8; i++)
 		{
 			//printf("%i\n", i);
 			//cout << tests[0].substr(j, commands[i].size()) << "|"<< endl;
@@ -141,7 +148,29 @@ deque<string>* tokenize(string input, string commands[])
 			
 
 		}
+		cout << "j " << j << endl;
 		// otherwise check for a prefix of the longer tokens and longer set of short tokens
+		if(input[j] == '#' || input[j] == 'x' || input[j] == 'X')
+		{
+			int offset = j;
+			offset++;
+			int size = 0;
+			while((input[offset] >= '0' && input[offset] <= '9') ||
+				  (input[offset] >= 'a' && input[offset] <= 'f') ||
+				  (input[offset] >= 'A' && input[offset] <= 'F'))
+			{
+				offset++;
+				size++;
+			}
+			// should be #654323456543
+			tokens->push_back(input.substr(j, size + 1));
+			//cout << "token found\n";
+			cout << tokens->at(tokens->size() - 1) << endl;
+			j = offset;
+
+		}
+		cout << "j2 " << j << endl;
+
 
 		// prefixes: "#", "0x", "x", "X"
 		// save prefix and the digits comming after it
@@ -194,13 +223,49 @@ int main()
 						"another_label:",
 						"another_label2:",
 						"label:  ldurx0[sp#8]",
-						"label_7:add x0, x0, x1",
-						"addi x0, x4, #3",
+						"label_7:add x0, x0, x12",
+						"addi x0, x4, #32345678",
 						"b.eq another_label",
 						"b Start"
 					};
 	// make sure longer variations of the word start first
-	string tokens[] = {"ldur", "addi", "add", "b.eq", "b", "x0", "[", "sp", "]", "x4", "x3", "x1", "#3", ",", "#8"};
+	string tokens[] = {"ldur", "addi", "add", "b.eq", "b", "[", "sp", "]", ","};
+	/*
+	b
+	sturb
+	ldurb
+	b.cond
+	orri
+	eori
+	sturh
+	ldurh
+	has to do with hight and low bits for signed or unsigned
+	and
+	add
+	addi
+	andi
+	bl
+	orr
+	adds
+	cbz
+	cbnz
+	sturw
+	ldursw
+	stxr
+	ldxr
+	eor
+	sub
+	subi
+	lsr
+	lsl
+	br
+	ands
+	subs
+	subis
+	andis
+	stur
+	ldur
+	*/
 	deque<deque<string>* > tests_token_lines;
 	map<string, int> gotos;
 	long long int mem[255];
@@ -230,16 +295,16 @@ int main()
 			string label;
 			//cout << "tokens with label\n";
 			//for_each(split_test_i->begin(), split_test_i->end(), [](string item){cout << item << " ";});
-			cout << endl;
-			cout << "->at label " << removed_right_square_bracket << endl;
+			//cout << endl;
+			//cout << "->at label " << removed_right_square_bracket << endl;
 			label = getLabel(removed_right_square_bracket);
-			cout << "label name =>" << getLabel(removed_right_square_bracket) << endl;
+			//cout << "label name =>" << getLabel(removed_right_square_bracket) << endl;
 			tests[i] = getRidOfLabel(removed_right_square_bracket);
-			cout << "got rid of label ==>" <<"|" << tests[i] << "|"<< endl;
+			//cout << "got rid of label ==>" <<"|" << tests[i] << "|"<< endl;
 			//if()
 			// want the jump to be for the next instruction = last instructions + 1 = size of instruction deque
 			gotos.insert(pair<string, int>(label, tests_token_lines.size()));
-			cout << "pair saved " << label << " " << tests_token_lines.size() << endl;
+			//cout << "pair saved " << label << " " << tests_token_lines.size() << endl;
 
 			// delete label
 			// save label and location
@@ -258,10 +323,12 @@ int main()
 		// assuming there is no label that comes before its definition(this can be changed)
 		cout << "printing tokens\n";
 		for_each(split_test_i->begin(), split_test_i->end(), [](string item){cout << item << " ";});
-		cout << endl;
+		cout << endl << endl;
 		
 
 	}
+		return 0;
+
 	for(int j = 0; j < tests_token_lines.size(); j++)
 	{
 		cout << j << endl;
@@ -345,6 +412,25 @@ int main()
 	stur to stack pointer pushes things to stack
 	b label adjusts the stack pointer to make a new stack
 	bl link_register to reset the stack register
+
+
+
+	LEGv8 has a branch-and-link (BL) instruction:
+ It saves the address of the following instruction (the return address) in register LR, and then branches to specified address
+BL ProcedureAddress
+ The BL command saves PC + 4 into register LR
+push
+
+To return from the procedure, the branch
+register instruction is used: BR LR
+ The BR instruction copies address stored in register LR to PC register
+pop
+
+
+if it says b or b.eq just goto it and don't assume its a function call
+
+
+http://www.cas.mcmaster.ca/~leduc/slides2ga3/2GA3slides2.pdf
 	*/
 	return 0;
 }
