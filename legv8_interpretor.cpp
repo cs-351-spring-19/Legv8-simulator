@@ -3,10 +3,20 @@
 #include <string>
 #include <deque>
 #include <map>
+#include <cctype>
+
 using namespace std;
 
 
-
+string toLower(string s)
+{
+	string new_string;
+	for (int i = 0; i < s.size(); ++i)
+	{
+	      new_string += tolower(s[i]);
+   	}
+   	return new_string;
+}
 
 /*
 int getRegisterIdOrIntermediateValue(string register_name)
@@ -112,6 +122,7 @@ deque<string>* tokenize(string input, string commands[])
 {
 	int j = 0;
 	deque<string>* tokens = new deque<string>;
+	string new_input = toLower(input);
 	/*
 	cout << input << endl;
 	for(int i = 0; i < 15; i++)
@@ -119,23 +130,29 @@ deque<string>* tokenize(string input, string commands[])
 		cout << commands[i] << endl;
 	}
 	*/
-	while(j < input.size())
+	cout << new_input << endl;
+	int count = 0;
+	while(j < new_input.size())
 	{
+		if(count >= 10)
+			exit(1);
 		//printf("j = %i\n", j);
 		// tries all possible tokens
 		// if a match
 		// collect and bump up j
 		bool found = false;
 
-		for(int i = 0; i < 8; i++)
+		// comma is i == 45? so why does this work?
+		for(int i = 0; i < 45; i++)
 		{
-			//printf("%i\n", i);
+			//printf("%s  %i \n", &commands[i], j);
 			//cout << tests[0].substr(j, commands[i].size()) << "|"<< endl;
 			//cout << commands[i] << "|" << endl << endl;
-
-			if(input.substr(j, commands[i].size()) == commands[i])
+			//cout << (input.substr(j, commands[i].size()) == commands[i]) << found << endl;
+			if(new_input.substr(j, commands[i].size()) == commands[i])
 			{
 				//printf("got here\n");
+				//cout << "found" << "|"<<commands[i]<< "|" << endl;
 				tokens->push_back(commands[i]);
 				//printf("got here 2\n");
 
@@ -148,28 +165,33 @@ deque<string>* tokenize(string input, string commands[])
 			
 
 		}
+		//cout << found << endl;
+
 		cout << "j " << j << endl;
 		// otherwise check for a prefix of the longer tokens and longer set of short tokens
-		if(input[j] == '#' || input[j] == 'x' || input[j] == 'X')
+		if(new_input[j] == '#' || new_input[j] == 'x' || new_input[j] == 'X')
 		{
 			int offset = j;
 			offset++;
 			int size = 0;
-			while((input[offset] >= '0' && input[offset] <= '9') ||
-				  (input[offset] >= 'a' && input[offset] <= 'f') ||
-				  (input[offset] >= 'A' && input[offset] <= 'F'))
+
+			while((new_input[offset] >= '0' && new_input[offset] <= '9') ||
+				  (new_input[offset] >= 'a' && new_input[offset] <= 'f') ||
+				  (new_input[offset] >= 'A' && new_input[offset] <= 'F'))
 			{
 				offset++;
 				size++;
+
 			}
 			// should be #654323456543
-			tokens->push_back(input.substr(j, size + 1));
-			//cout << "token found\n";
+			tokens->push_back(new_input.substr(j, size + 1));
+			cout << "token found\n";
 			cout << tokens->at(tokens->size() - 1) << endl;
 			j = offset;
 
 		}
-		cout << "j2 " << j << endl;
+
+		//cout << "j2 " << j << endl;
 
 
 		// prefixes: "#", "0x", "x", "X"
@@ -178,13 +200,18 @@ deque<string>* tokenize(string input, string commands[])
 		//cout << found << endl;
 		//printf("j = %i\n", j);
 		// the input started with a label
+		
 		if(!found)
 		{
+			cout << "here\n";
 			// it is a label so grab the rest
 			//cout << tests[0].size() << " " << j << endl;
-			tokens->push_back(input.substr(j, input.size() - j));
-			j = input.size();
+			tokens->push_back(new_input.substr(j, new_input.size() - j));
+			j = new_input.size();
 		}
+		for_each(tokens->begin(), tokens->end(), [](string item){cout << item << "|";});
+
+		count++;
 
 	}
 	return tokens;
@@ -216,10 +243,74 @@ string getLabel(string line_starting_with_a_label)
 	}
 	return label;
 }
+string getRidOfLeftParens(string token)
+{
+	if(token[0] == '[')
+	{
+		//cout << token<< " [\n";
+
+		token = token.substr(1, token.size() - 2);
+		//cout << token << endl;
+
+	}
+	return token;
+}
+
+string getRidOfCommaOnRightSide(string token)
+{
+
+	if(token[token.size() - 1] == ',')
+	{
+		//cout << token << " ,\n";
+
+		token = token.substr(0, token.size() - 1);
+		//cout << token << endl;
+	}
+	return token;
+}
+string getRidOfRightParenseOnRightSide(string token)
+{
+
+	if(token[token.size() - 1] == ']')
+	{
+		//cout << token << " ]\n";
+
+		token = token.substr(0, token.size() - 1);
+		//cout << token << endl;
+	}
+	return token;
+}
+
+deque<string>* split(string input)
+{
+	// assume all keywords+ a little punctuation are separated out by whitespace
+	deque<string>* keyword_puncs = new deque<string>;
+	string keyword_punc;
+	int i = 0;
+	while(i < input.size())
+	{
+		if(input[i] != ' ')
+		{
+			keyword_punc += tolower(input[i]);
+		}
+		else
+		{
+			keyword_puncs->push_back(keyword_punc);
+			keyword_punc = "";
+		}
+		i++;
+	}
+	if(keyword_punc.size() > 0)
+	{
+		keyword_puncs->push_back(keyword_punc);
+
+	}
+	return keyword_puncs;
+}
 int main()
 {
 
-	string tests[] = {	"Start:", "b.eq ,label",
+	string tests2[] = {	"Start:", "b.eq ,label",
 						"another_label:",
 						"another_label2:",
 						"label:  ldurx0[sp#8]",
@@ -228,8 +319,120 @@ int main()
 						"b.eq another_label",
 						"b Start"
 					};
+	string tests[] = {
+		"ADDI X0, X31, #12",
+		"FUN: CBZ X0, DONE",
+		"CMPI X0, #1",
+		"B.EQ DONE",
+		"SUBI SP, SP, #32",
+		"STUR X0, [SP, #0]",
+		"STUR X30, [SP, #8]",
+		"STUR X19, [SP, #16]",
+		"SUBI X0, X0, #1",
+		"BL FUN",
+		"ADDI X19, X0, #0",
+		"LDUR X0, [SP, #0]",
+		"SUBI X0, X0, #2",
+		"BL FUN",
+		"ADD X0, X0, X19",
+		"LDUR X30, [SP, #8]",
+		"LDUR X19, [SP, #16]",
+		"ADDI SP, SP, #32",
+		"DONE: BR X30"
+
+	};
+	for(int i = 0; i < 19; i++)
+	{
+		deque<string>* tokens2 = split(tests[i]);
+		//for_each(tokens2->begin(), tokens2->end(), [](string item){cout << item << "|";});
+		//cout << endl << endl;
+
+	}
+	//return 0;
+
+	/*
+ADDI X0, X31, #12 FUN: CBZ X0, DONE
+CMPI X0, #1
+B.EQ DONE
+SUBI SP, SP, #32 STUR X0, [SP, #0] STUR X30, [SP, #8] STUR X19, [SP, #16] SUBI X0, X0, #1
+BL FUN
+ADDI X19, X0, #0 LDUR X0, [SP, #0] SUBI X0, X0, #2 BL FUN
+ADD X0, X0, X19 LDUR X30, [SP, #8] LDUR X19, [SP, #16] ADDI SP, SP, #32 // (*)
+DONE: BR X30
+	*/
 	// make sure longer variations of the word start first
-	string tokens[] = {"ldur", "addi", "add", "b.eq", "b", "[", "sp", "]", ","};
+
+	string tokens[] = {
+
+		"b.eq",
+		"b.lt",
+
+		"b.gt",
+		"b.lo",
+		
+		"b.hi",
+		"b.ne",
+		
+		"b.le",
+		"b.ge",
+		
+		"b.ls",
+		"b.hs",
+		
+		"bl",
+		"br",
+		
+		"b",
+		"sturb",
+		
+		"sturw",
+		"subis",
+		
+		"sturh",
+		"stxr",
+		
+		"stur",
+		"subs",
+		
+		"subi",
+		"sub",
+		
+		"ldursw",
+		"ldurb",
+		
+		"ldurh",
+		"ldxr",
+		
+		"ldur",
+		"lsr",
+		
+		"lsl",
+		"orri",
+		
+		"orr",
+		"eori",
+		
+		"eor",
+		"andis",
+		
+		"addi",
+		"andi",
+		
+		"ands",
+		"adds",
+		
+		"and",
+		"add",
+		
+		"cbnz",
+		"cbz",
+		
+		"[",
+		"sp",
+		
+		"]",
+		","
+	};
 	/*
 	b
 	sturb
@@ -265,6 +468,64 @@ int main()
 	andis
 	stur
 	ldur
+
+
+	b.cond,
+	bl,
+	br,
+	b,
+
+	sturb,
+	sturw,
+	subis,
+	sturh,
+	stxr,
+	stur,
+	subs,
+	subi,
+	sub,
+
+	ldursw,
+	ldurb,
+	ldurh,
+	ldxr,
+	ldur,
+	lsr,
+	lsl,
+
+
+	orri,
+	orr,
+
+	eori,
+	eor,
+
+	
+	andis,
+	addi,
+	andi,
+	ands,
+	adds,
+	and,
+	add,
+
+
+
+	cbnz,
+	cbz
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	
+	
 	*/
 	deque<deque<string>* > tests_token_lines;
 	map<string, int> gotos;
@@ -280,65 +541,65 @@ int main()
 	// digit
 	// x, X
 
-	for(int i = 0; i < 9; i++)
+	for(int i = 0; i < 19; i++)
 	{
-		//cout << getRidOfWhiteSpace(tests[i]) << endl;
-		string removed_spaces = getRidOfCharacter(tests[i], ' ');
-		string removed_commas = getRidOfCharacter(removed_spaces, ',');
-		string removed_left_square_bracket = getRidOfCharacter(removed_commas, '[');
-		string removed_right_square_bracket = getRidOfCharacter(removed_left_square_bracket, ']');
-		tests[i] = removed_right_square_bracket;
+		deque<string>* tokens = split(tests[i]);
+		deque<string>* trimmed_tokens = new deque<string>(tokens->size());
+
+		transform(tokens->begin(), tokens->end(), trimmed_tokens->begin(), [](string item){
+			return getRidOfRightParenseOnRightSide(getRidOfCommaOnRightSide(getRidOfLeftParens(item)));
+
+		});
+		for_each(trimmed_tokens->begin(), trimmed_tokens->end(), [](string item){cout << item << "|";});
+
+		//cout << (tests[i].find(":") != std::string::npos) << endl;
 		// if there is only one item left and it ends in : then it's a label
 		if(tests[i].find(":") != std::string::npos)
 		{
-
+			// fun:|cbz|x0,|
+			// done:|br|
+			// done:
 			string label;
-			//cout << "tokens with label\n";
-			//for_each(split_test_i->begin(), split_test_i->end(), [](string item){cout << item << " ";});
-			//cout << endl;
-			//cout << "->at label " << removed_right_square_bracket << endl;
-			label = getLabel(removed_right_square_bracket);
-			//cout << "label name =>" << getLabel(removed_right_square_bracket) << endl;
-			tests[i] = getRidOfLabel(removed_right_square_bracket);
-			//cout << "got rid of label ==>" <<"|" << tests[i] << "|"<< endl;
-			//if()
-			// want the jump to be for the next instruction = last instructions + 1 = size of instruction deque
-			gotos.insert(pair<string, int>(label, tests_token_lines.size()));
-			//cout << "pair saved " << label << " " << tests_token_lines.size() << endl;
+			// get first element of tokens
+			label = trimmed_tokens->at(0).substr(0, trimmed_tokens->at(0).size() - 1);
+				cout << label<<"\n";
 
-			// delete label
-			// save label and location
-			//gotos.insert(pair<string, int>())
-			// the label was the only thing on the line, so we want the program counter to start on the line immediately after this one
-			if(tests[i].size() == 0)
+			trimmed_tokens->pop_front();
+			if(trimmed_tokens->size() > 0)
 			{
-				//gotos[label] += 1;
-				continue;
+				gotos.insert(pair<string, int>(label, tests_token_lines.size()));
+				tests_token_lines.push_back(trimmed_tokens);
+				cout << label << " " << gotos[label] << endl;
 			}
+			else
+			{
+				gotos.insert(pair<string, int>(label, tests_token_lines.size()));
+				cout << label << " " << gotos[label] << endl;
+
+			}
+			
 		}
-		deque<string>* split_test_i = tokenize(tests[i], tokens);
-		tests_token_lines.push_back(split_test_i);
+		else
+		{
+			tests_token_lines.push_back(trimmed_tokens);
+
+		}
+		//deque<string>* split_test_i = tokenize(tests[i], tokens);
 		// there may be an instruction on the same line as the label
 		// save it into the goto list
 		// assuming there is no label that comes before its definition(this can be changed)
-		cout << "printing tokens\n";
-		for_each(split_test_i->begin(), split_test_i->end(), [](string item){cout << item << " ";});
-		cout << endl << endl;
+		//for_each(split_test_i->begin(), split_test_i->end(), [](string item){cout << item << " ";});
+		cout << endl;
 		
 
 	}
-		return 0;
 
-	for(int j = 0; j < tests_token_lines.size(); j++)
-	{
-		cout << j << endl;
-		for(int i = 0; i < tests_token_lines[j]->size(); i++)
-		{
-			cout << tests_token_lines.at(j)->at(i) << " ";
-		}
-		cout << endl;
+	
 
-	};
+	cout << endl;
+	for_each(gotos.begin(), gotos.end(), [](pair<string, int> goto_){cout << goto_.first << " " << goto_.second;});
+	return 0;
+
 	// i should be the program counter
 	// each deque inside tests_token_lines is a deque of the tokenzed strings from the original string
 	for(int i = 0; i < tests_token_lines.size(); i++)
@@ -350,8 +611,8 @@ int main()
 			continue;
 		}*/
 		for_each(tests_token_lines.at(i)->begin(), tests_token_lines.at(i)->end(), [](string item){cout << item << " ";});
-
-		if(tests_token_lines.at(i)->at(0) == "b.eq")
+		string command = tests_token_lines.at(i)->at(0);
+		if(command == "b.eq")
 		{
 			cout << "->b.eq instruction" << endl;
 			
@@ -367,7 +628,7 @@ int main()
 			// run a function called b.eq to affect the memory and registers however the instruction says
 			// bEQ(split_test_i, mem, registers)
 		}
-		if(tests_token_lines.at(i)->at(0) == "b")
+		if(command == "b")
 		{
 			cout << "->b instruction" << endl;
 			
@@ -384,19 +645,214 @@ int main()
 			// run a function called b.eq to affect the memory and registers however the instruction says
 			// b(split_test_i, mem, registers)
 		}
-		else if(tests_token_lines.at(i)->at(0) == "add")
+		else if(command == "add")
 		{
 			cout << "->add instruction" << endl;
 			cout << "->add p1 and p2 and store the result in p0" << endl;
 			// add(split_test_i, mem, registers)
 
 		}
-		else if(tests_token_lines.at(i)->at(0) == "addi")
+		else if(command == "addi")
 		{
+			// ge rid of the commas on the end of the register names
 			cout << "->addi instruction" << endl;
 			cout << "->add p1 and number and store the result in p0" << endl;
 
 		}
+
+		// http://www.eecs.umich.edu/courses/eecs370/eecs370.w19/resources/materials/ARM-v8-Quick-Reference-Guide.pdf
+		// https://www.ibm.com/support/knowledgecenter/en/ssw_aix_72/com.ibm.aix.alangref/idalangref_comp_immed.htm
+		else if(command == "b.eq")
+		{
+
+			// bEQ(jump_label)
+		}
+		else if(command == "b.lt")
+		{
+			// bLT(jump_label)
+		}
+		else if(command == "b.gt")
+		{
+			// bGT(jump_label)
+		}
+		else if(command == "b.lo")
+		{
+			// bLO(jump_label)
+		}
+		else if(command == "b.hi")
+		{
+			// bHI(jump_label)
+		}
+		else if(command == "b.ne")
+		{
+			// bNE(jump_label)
+		}
+		else if(command == "b.le")
+		{
+			// bLE(jump_label)
+		}
+		else if(command == "b.ge")
+		{
+			// bGE(jump_label)
+		}
+		else if(command == "b.ls")
+		{
+			// bLS(jump_label)
+		}
+		else if(command == "b.hs")
+		{
+			// bHS(jump_label)
+		}
+		else if(command == "bl")
+		{
+			// set pc to jump_label line number and store line number into link register
+			// bL(jump_label)
+		}
+		else if(command == "br")
+		{
+			// set pc to register
+			// bR(register)
+		}
+		else if(command == "b")
+		{
+			// set pc to jump_label line number or register value
+			// b(jump_label_or_register)
+		}
+		else if(command == "sturb")
+		{
+			// sturb(register1, register2, offset_from_stack_pointer)
+		}
+		else if(command == "sturw")
+		{
+			// sturw(register1, register2, offset_from_stack_pointer)
+
+		}
+		else if(command == "sturh")
+		{
+			// sturw(register1, register2, offset_from_stack_pointer)
+		}
+		else if(command == "stxr")
+		{
+			// sturw(register1, register2, offset_from_stack_pointer)
+
+		}
+		else if(command == "stur")
+		{
+			// sturw(register1, register2, offset_from_stack_pointer)
+
+		}
+		else if(command == "subis")
+		{
+			// subis(register1, register2, immediate_value)
+
+		}
+		else if(command == "subs")
+		{
+			// subs(register1, register2, register3)
+		}
+		else if(command == "subi")
+		{
+			// subi(register1, register2, immediate_value)
+		}
+		else if(command == "sub")
+		{
+			// sub(register1, register2, register3)
+
+		}
+		else if(command == "ldursw")
+		{
+			// ldursw(register1, register2, offset_from_stack_pointer)
+
+		}
+		else if(command == "ldurb")
+		{
+			// ldurb(register1, register2, offset_from_stack_pointer)
+		}
+		else if(command == "ldurh")
+		{
+			// ldurh(register1, register2, offset_from_stack_pointer)
+		}
+		else if(command == "ldxr")
+		{
+			// ldxr(register1, register2, offset_from_stack_pointer)
+		}
+		else if(command == "ldur")
+		{
+			// ldur(register1, register2, shift_amount)
+		}
+		else if(command == "lsr")
+		{
+			// lsr(register1, register2, shift_amount)
+		}
+		else if(command == "lsl")
+		{
+			// lsl(register1, register2, shift_amount)
+		}
+		else if(command == "orri")
+		{
+			// orri(register1, register2, immediate_value)
+		}
+		else if(command == "orr")
+		{
+			// orr(register1, register2, register3)
+		}
+		else if(command == "eori")
+		{
+			// eori(register1, register2, immediate_value)
+
+		}
+		else if(command == "eor")
+		{
+			// eori(register1, register2, register3)
+
+		}
+		else if(command == "andis")
+		{
+			// andis(register1, register2, immediate_value)
+		}
+		else if(command == "addi")
+		{
+			// addi(register1, register2, immediate_value)
+		}
+		else if(command == "andi")
+		{
+			// andi(register1, register2, immediate_value)
+		}
+		else if(command == "ands")
+		{
+			// ands(register1, register2, register3)
+
+		}
+		else if(command == "adds")
+		{
+			// adds(register1, register2, register3)
+
+		}
+		else if(command == "and")
+		{
+			// and(register1, register2, register3)
+		}
+		else if(command == "add")
+		{
+			// add(register1, register2, register3)
+		}
+		else if(command == "cbnz")
+		{
+			// cbnz(register1, label)
+		}
+		else if(command == "cbz")
+		{
+			// cbz(register1, label)
+		}
+		else if(command == "cmp")
+		{
+			// cmp(register1, register2, register3)
+		}
+		else if(command == "cmpi")
+		{
+			// cmpi(register1, register2, immediate_value)
+		}
+		
 		cout << endl;
 	}
 	// delete the inner deques
