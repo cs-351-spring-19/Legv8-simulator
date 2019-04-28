@@ -310,6 +310,7 @@ deque<string>* split(string input)
 int main()
 {
 
+	
 	string tests2[] = {	"Start:", "b.eq ,label",
 						"another_label:",
 						"another_label2:",
@@ -319,6 +320,7 @@ int main()
 						"b.eq another_label",
 						"b Start"
 					};
+	
 	string tests[] = {
 		"ADDI X0, X31, #12",
 		"FUN: CBZ X0, DONE",
@@ -665,53 +667,53 @@ DONE: BR X30
 		else if(command == "b.eq")
 		{
 
-			// bEQ(jump_label)
+			// beq(jump_label)
 		}
 		else if(command == "b.lt")
 		{
-			// bLT(jump_label)
+			// blt(jump_label)
 		}
 		else if(command == "b.gt")
 		{
-			// bGT(jump_label)
+			// bgt(jump_label)
 		}
 		else if(command == "b.lo")
 		{
-			// bLO(jump_label)
+			// blo(jump_label)
 		}
 		else if(command == "b.hi")
 		{
-			// bHI(jump_label)
+			// bhi(jump_label)
 		}
 		else if(command == "b.ne")
 		{
-			// bNE(jump_label)
+			// bne(jump_label)
 		}
 		else if(command == "b.le")
 		{
-			// bLE(jump_label)
+			// ble(jump_label)
 		}
 		else if(command == "b.ge")
 		{
-			// bGE(jump_label)
+			// bge(jump_label)
 		}
 		else if(command == "b.ls")
 		{
-			// bLS(jump_label)
+			// bls(jump_label)
 		}
 		else if(command == "b.hs")
 		{
-			// bHS(jump_label)
+			// bhs(jump_label)
 		}
 		else if(command == "bl")
 		{
 			// set pc to jump_label line number and store line number into link register
-			// bL(jump_label)
+			// bl(jump_label)
 		}
 		else if(command == "br")
 		{
 			// set pc to register
-			// bR(register)
+			// br(register)
 		}
 		else if(command == "b")
 		{
