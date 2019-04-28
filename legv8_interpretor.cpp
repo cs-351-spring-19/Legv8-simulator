@@ -308,6 +308,23 @@ deque<string>* split(string input)
 	}
 	return keyword_puncs;
 }
+
+int convertOffsetToStackIndex(int offset)
+{
+	return offset / 8;
+}
+
+deque<deque<string>* > tests_token_lines;
+// this requires a case in sub where the distance to the new sp is lengthened
+deque<int>* distance_from_current_sp_to_old_sp; // this needs to be initialized before the first command is processed
+
+deque<long long int>* stack;
+deque<long long int>* memory;
+map<string, int> gotos;
+long long int registers[32];
+// need something for the STK memory
+// is it just this?
+int program_counter = 0;
 int main()
 {
 
@@ -530,14 +547,7 @@ DONE: BR X30
 	
 	
 	*/
-	deque<deque<string>* > tests_token_lines;
-	map<string, int> gotos;
-	long long int mem[255];
-	long long int registers[32];
-	// need something for the STK memory
-	// is it just this?
-	long long int stack[255];
-	int program_counter = 0;
+
 	// will need functions to make the following sets of tokens "Xi", "#number", "number"
 	// have the token function recognize hex values using "0x"
 	// "#"
