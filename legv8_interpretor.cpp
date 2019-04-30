@@ -37,6 +37,23 @@ int getRegisterIdOrIntermediateValue(string register_name)
 	"x12" is encoded in ascii so you will have to convert the ascii value of "1", and "2" to 1 and 2
 	"x12" => {120, 49, 50}
 	have it also get intermediate values like "#234562" -> 234562
+	
+#include "iostream"
+#include <typeinfo>
+
+std::string temp = "12345";
+
+int main() {
+  
+std::cout << typeid(temp).name() << std::endl;
+  
+int n = std::stoi(temp);
+
+std::cout << temp << " --->" << n << std::endl;
+
+
+  return 0;
+}
 
 */
 
