@@ -7,6 +7,17 @@
 
 using namespace std;
 
+enum sepcial_registers = {sp = 28, fp, lr, xzr};
+map<string, int> gotos;
+long long int mem[255];
+long long int registers[32];
+// need something for the STK memory
+// is it just this?
+//long long int stack[255];
+deque<long long int> stack;
+stack.push_back(0);
+
+int program_counter = 0;
 
 string toLower(string s)
 {
@@ -108,17 +119,18 @@ int getRegisterValue(string registerName)
       std::string temp = registerName.substr(1, registerName.length() - 1 );
       return std::stoi(temp);   
   }
-  
-  regs.insert(pair<string, int>("X0", 0));
-  regs.insert(pair<string, int>("X1", 1));
-  regs.insert(pair<string, int>("X2", 2));
-  regs.insert(pair<string, int>("X3", 3));
-  regs.insert(pair<string, int>("X4", 4));
-  regs.insert(pair<string, int>("X5", 5));
-  regs.insert(pair<string, int>("X6", 6));
-  regs.insert(pair<string, int>("X7", 7));
-  regs.insert(pair<string, int>("X8", 8));
-  regs.insert(pair<string, int>("X9", 9));
+  // convert "x" to "X"
+  registerName[0] = toupper(registerName[0]);
+  regs.insert(pair<string, int>("X0",   0));
+  regs.insert(pair<string, int>("X1",   1));
+  regs.insert(pair<string, int>("X2",   2));
+  regs.insert(pair<string, int>("X3",   3));
+  regs.insert(pair<string, int>("X4",   4));
+  regs.insert(pair<string, int>("X5",   5));
+  regs.insert(pair<string, int>("X6",   6));
+  regs.insert(pair<string, int>("X7",   7));
+  regs.insert(pair<string, int>("X8",   8));
+  regs.insert(pair<string, int>("X9",   9));
   regs.insert(pair<string, int>("X10", 10));
   regs.insert(pair<string, int>("X11", 11));
   regs.insert(pair<string, int>("X12", 12));
@@ -138,11 +150,11 @@ int getRegisterValue(string registerName)
   regs.insert(pair<string, int>("X26", 26));
   regs.insert(pair<string, int>("X27", 27));
   regs.insert(pair<string, int>("X28", 28));
-  regs.insert(pair<string, int>("SP", 28));
+  regs.insert(pair<string, int>("SP",  28));
   regs.insert(pair<string, int>("X29", 29));
-  regs.insert(pair<string, int>("FP", 29));
+  regs.insert(pair<string, int>("FP",  29));
   regs.insert(pair<string, int>("X30", 30));
-  regs.insert(pair<string, int>("LR", 30));
+  regs.insert(pair<string, int>("LR",  30));
   regs.insert(pair<string, int>("XZR", 31));
   
   return regs.at(registerName);
@@ -155,8 +167,46 @@ int getRegisterValue(string registerName)
 
 
 
+void subi(string source_register, string destination, string immediate_value)
+{
+	int source 		= 	getRegisterValue(source_register);
+	int destination = 	getRegisterValue(destination);
+	int offset 		= 	getRegisterValue(immediate_value);
 
+	// subi sp, sp, #alpha
+	if(source == 28 && destination == 28)
+	{
+		for(int i = 0; i < offset; i++)
+		{
+			stack.push_back(0);
+			registers[source] += offset / 8;
+		}
+	}
+}
 
+void stur(string source_register, string memory_register, string offset)
+{
+	int source = getRegisterValue(source_register);
+	int memory_register2 = getRegisterValue(memory_register);
+	int offset = getRegisterValue(offset);
+
+	int stack_location;
+	if(memory_register2 == 28)
+	{
+		stack_location = registers[memory_register2] - offset / 8
+	}
+}
+
+void bl(string label)
+{
+	regisers[lr] = program_counter;
+	int goto_location = gotos[label];
+	program_counter = goto_location;
+}
+void br(string link_register)
+{
+	registers[pc] = registers[lr] + 1;
+}
 
 
 
@@ -270,13 +320,7 @@ deque<string>* split(string input)
 	}
 	return keyword_puncs;
 }
-map<string, int> gotos;
-long long int mem[255];
-long long int registers[32];
-// need something for the STK memory
-// is it just this?
-long long int stack[255];
-int program_counter = 0;
+
 int main()
 {
 
