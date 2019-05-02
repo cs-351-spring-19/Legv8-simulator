@@ -88,63 +88,67 @@ so b lr can go back to sp's original location in stack
 */
 
 
-/*
-Sou's Function
-int getRegisterValue(string registerName) {
+
+//Sou's Function
+int getRegisterValue(string registerName)
+{
   
-  if (registerName.length() == 0) {
-      return;
-    }
+  if (registerName.length() == 0)
+  {
+  		// so there is no out of bounds accessing
+      	return 0;
+  }
   
   map<string, int> regs;
   
-  std::string registerName = "#3859352";
+  //registerName = "#3859352";
   
-  if (registerName[0] == '#') {
+  if (registerName[0] == '#')
+  {
       std::string temp = registerName.substr(1, registerName.length() - 1 );
       return std::stoi(temp);   
-    }
+  }
   
-  regs.insert("X0", 0)
-  regs.insert("X1", 1)
-  regs.insert("X2", 2)
-  regs.insert("X3", 3)
-  regs.insert("X4", 4)
-  regs.insert("X5", 5)
-  regs.insert("X6", 6)
-  regs.insert("X7", 7)
-  regs.insert("X8", 8)
-  regs.insert("X9", 9)
-  regs.insert("X10", 10)
-  regs.insert("X11", 11)
-  // regs.insert("X12", 12)
-  regs.insert("X13", 13)
-  regs.insert("X14", 14)
-  regs.insert("X15", 15)
-  regs.insert("X16", 16)
-  regs.insert("X17", 17)
-  regs.insert("X18", 18)
-  regs.insert("X19", 19)
-  regs.insert("X20", 20)
-  regs.insert("X21", 21)
-  regs.insert("X22", 22)
-  regs.insert("X23", 23)
-  regs.insert("X24", 24)
-  regs.insert("X25", 25)
-  regs.insert("X26", 26)
-  regs.insert("X27", 27)
-  regs.insert("X28", 28)
-  regs.insert("SP", 28)
-  regs.insert("X29", 29)
-  regs.insert("FP", 29)
-  regs.insert("X30", 30)
-  regs.insert("LR", 30)
-  regs.insert("XZR", 31)
+  regs.insert(pair<string, int>("X0", 0));
+  regs.insert(pair<string, int>("X1", 1));
+  regs.insert(pair<string, int>("X2", 2));
+  regs.insert(pair<string, int>("X3", 3));
+  regs.insert(pair<string, int>("X4", 4));
+  regs.insert(pair<string, int>("X5", 5));
+  regs.insert(pair<string, int>("X6", 6));
+  regs.insert(pair<string, int>("X7", 7));
+  regs.insert(pair<string, int>("X8", 8));
+  regs.insert(pair<string, int>("X9", 9));
+  regs.insert(pair<string, int>("X10", 10));
+  regs.insert(pair<string, int>("X11", 11));
+  regs.insert(pair<string, int>("X12", 12));
+  regs.insert(pair<string, int>("X13", 13));
+  regs.insert(pair<string, int>("X14", 14));
+  regs.insert(pair<string, int>("X15", 15));
+  regs.insert(pair<string, int>("X16", 16));
+  regs.insert(pair<string, int>("X17", 17));
+  regs.insert(pair<string, int>("X18", 18));
+  regs.insert(pair<string, int>("X19", 19));
+  regs.insert(pair<string, int>("X20", 20));
+  regs.insert(pair<string, int>("X21", 21));
+  regs.insert(pair<string, int>("X22", 22));
+  regs.insert(pair<string, int>("X23", 23));
+  regs.insert(pair<string, int>("X24", 24));
+  regs.insert(pair<string, int>("X25", 25));
+  regs.insert(pair<string, int>("X26", 26));
+  regs.insert(pair<string, int>("X27", 27));
+  regs.insert(pair<string, int>("X28", 28));
+  regs.insert(pair<string, int>("SP", 28));
+  regs.insert(pair<string, int>("X29", 29));
+  regs.insert(pair<string, int>("FP", 29));
+  regs.insert(pair<string, int>("X30", 30));
+  regs.insert(pair<string, int>("LR", 30));
+  regs.insert(pair<string, int>("XZR", 31));
   
-  return regs.at(registerName)
+  return regs.at(registerName);
 
 }
-*/
+
 
 
 
@@ -192,121 +196,6 @@ string getRidOfCharacter(string input, char character_to_remove)
 }
 
 
-deque<string>* tokenize(string input, string commands[])
-{
-	int j = 0;
-	deque<string>* tokens = new deque<string>;
-	string new_input = toLower(input);
-	/*
-	cout << input << endl;
-	for(int i = 0; i < 15; i++)
-	{
-		cout << commands[i] << endl;
-	}
-	*/
-	cout << new_input << endl;
-	int count = 0;
-	while(j < new_input.size())
-	{
-		if(count >= 10)
-			exit(1);
-		//printf("j = %i\n", j);
-		// tries all possible tokens
-		// if a match
-		// collect and bump up j
-		bool found = false;
-
-		// comma is i == 45? so why does this work?
-		for(int i = 0; i < 45; i++)
-		{
-			//printf("%s  %i \n", &commands[i], j);
-			//cout << tests[0].substr(j, commands[i].size()) << "|"<< endl;
-			//cout << commands[i] << "|" << endl << endl;
-			//cout << (input.substr(j, commands[i].size()) == commands[i]) << found << endl;
-			if(new_input.substr(j, commands[i].size()) == commands[i])
-			{
-				//printf("got here\n");
-				//cout << "found" << "|"<<commands[i]<< "|" << endl;
-				tokens->push_back(commands[i]);
-				//printf("got here 2\n");
-
-				j += commands[i].size();
-				found = true;
-				//for_each(tokens.begin(), tokens.end(), [](string item){cout << item << "|";});
-				//cout << endl;
-				break;
-			}
-			
-
-		}
-		//cout << found << endl;
-
-		cout << "j " << j << endl;
-		// otherwise check for a prefix of the longer tokens and longer set of short tokens
-		if(new_input[j] == '#' || new_input[j] == 'x' || new_input[j] == 'X')
-		{
-			int offset = j;
-			offset++;
-			int size = 0;
-
-			while((new_input[offset] >= '0' && new_input[offset] <= '9') ||
-				  (new_input[offset] >= 'a' && new_input[offset] <= 'f') ||
-				  (new_input[offset] >= 'A' && new_input[offset] <= 'F'))
-			{
-				offset++;
-				size++;
-
-			}
-			// should be #654323456543
-			tokens->push_back(new_input.substr(j, size + 1));
-			cout << "token found\n";
-			cout << tokens->at(tokens->size() - 1) << endl;
-			j = offset;
-
-		}
-
-		//cout << "j2 " << j << endl;
-
-
-		// prefixes: "#", "0x", "x", "X"
-		// save prefix and the digits comming after it
-			// save it and increment
-		//cout << found << endl;
-		//printf("j = %i\n", j);
-		// the input started with a label
-		
-		if(!found)
-		{
-			cout << "here\n";
-			// it is a label so grab the rest
-			//cout << tests[0].size() << " " << j << endl;
-			tokens->push_back(new_input.substr(j, new_input.size() - j));
-			j = new_input.size();
-		}
-		for_each(tokens->begin(), tokens->end(), [](string item){cout << item << "|";});
-
-		count++;
-
-	}
-	return tokens;
-}
-string getRidOfLabel(string line_starting_with_a_label)
-{
-	// find location of label
-	// cut it off
-	// 
-	string label;
-
-	int end = line_starting_with_a_label.find(":");
-	if(end != std::string::npos)
-	{
-		// +1 for the ":"
-		label = line_starting_with_a_label.substr(end + 1, line_starting_with_a_label.size() - end);
-
-	}
-	return label;
-
-}
 string getLabel(string line_starting_with_a_label)
 {
 	string label;
@@ -381,6 +270,13 @@ deque<string>* split(string input)
 	}
 	return keyword_puncs;
 }
+map<string, int> gotos;
+long long int mem[255];
+long long int registers[32];
+// need something for the STK memory
+// is it just this?
+long long int stack[255];
+int program_counter = 0;
 int main()
 {
 
@@ -509,108 +405,9 @@ DONE: BR X30
 		"]",
 		","
 	};
-	/*
-	b
-	sturb
-	ldurb
-	b.cond
-	orri
-	eori
-	sturh
-	ldurh
-	has to do with hight and low bits for signed or unsigned
-	and
-	add
-	addi
-	andi
-	bl
-	orr
-	adds
-	cbz
-	cbnz
-	sturw
-	ldursw
-	stxr
-	ldxr
-	eor
-	sub
-	subi
-	lsr
-	lsl
-	br
-	ands
-	subs
-	subis
-	andis
-	stur
-	ldur
 
-
-	b.cond,
-	bl,
-	br,
-	b,
-
-	sturb,
-	sturw,
-	subis,
-	sturh,
-	stxr,
-	stur,
-	subs,
-	subi,
-	sub,
-
-	ldursw,
-	ldurb,
-	ldurh,
-	ldxr,
-	ldur,
-	lsr,
-	lsl,
-
-
-	orri,
-	orr,
-
-	eori,
-	eor,
-
-	
-	andis,
-	addi,
-	andi,
-	ands,
-	adds,
-	and,
-	add,
-
-
-
-	cbnz,
-	cbz
-
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
-	
-	
-	*/
 	deque<deque<string>* > tests_token_lines;
-	map<string, int> gotos;
-	long long int mem[255];
-	long long int registers[32];
-	// need something for the STK memory
-	// is it just this?
-	long long int stack[255];
-	int program_counter = 0;
+
 	// will need functions to make the following sets of tokens "Xi", "#number", "number"
 	// have the token function recognize hex values using "0x"
 	// "#"
@@ -674,7 +471,7 @@ DONE: BR X30
 
 	cout << endl;
 	for_each(gotos.begin(), gotos.end(), [](pair<string, int> goto_){cout << goto_.first << " " << goto_.second;});
-	return 0;
+	//return 0;
 
 	// i should be the program counter
 	// each deque inside tests_token_lines is a deque of the tokenzed strings from the original string
