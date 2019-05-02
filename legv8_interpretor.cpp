@@ -38,6 +38,23 @@ int getRegisterIdOrIntermediateValue(string register_name)
 	"x12" => {120, 49, 50}
 
 	have it also get intermediate values like "#234562" -> 234562
+	
+#include "iostream"
+#include <typeinfo>
+
+std::string temp = "12345";
+
+int main() {
+  
+std::cout << typeid(temp).name() << std::endl;
+  
+int n = std::stoi(temp);
+
+std::cout << temp << " --->" << n << std::endl;
+
+
+  return 0;
+}
 
 */
 
@@ -71,7 +88,63 @@ so b lr can go back to sp's original location in stack
 */
 
 
+/*
+Sou's Function
+int getRegisterValue(string registerName) {
+  
+  if (registerName.length() == 0) {
+      return;
+    }
+  
+  map<string, int> regs;
+  
+  std::string registerName = "#3859352";
+  
+  if (registerName[0] == '#') {
+      std::string temp = registerName.substr(1, registerName.length() - 1 );
+      return std::stoi(temp);   
+    }
+  
+  regs.insert("X0", 0)
+  regs.insert("X1", 1)
+  regs.insert("X2", 2)
+  regs.insert("X3", 3)
+  regs.insert("X4", 4)
+  regs.insert("X5", 5)
+  regs.insert("X6", 6)
+  regs.insert("X7", 7)
+  regs.insert("X8", 8)
+  regs.insert("X9", 9)
+  regs.insert("X10", 10)
+  regs.insert("X11", 11)
+  // regs.insert("X12", 12)
+  regs.insert("X13", 13)
+  regs.insert("X14", 14)
+  regs.insert("X15", 15)
+  regs.insert("X16", 16)
+  regs.insert("X17", 17)
+  regs.insert("X18", 18)
+  regs.insert("X19", 19)
+  regs.insert("X20", 20)
+  regs.insert("X21", 21)
+  regs.insert("X22", 22)
+  regs.insert("X23", 23)
+  regs.insert("X24", 24)
+  regs.insert("X25", 25)
+  regs.insert("X26", 26)
+  regs.insert("X27", 27)
+  regs.insert("X28", 28)
+  regs.insert("SP", 28)
+  regs.insert("X29", 29)
+  regs.insert("FP", 29)
+  regs.insert("X30", 30)
+  regs.insert("LR", 30)
+  regs.insert("XZR", 31)
+  
+  return regs.at(registerName)
 
+}
+*/
 
 
 
