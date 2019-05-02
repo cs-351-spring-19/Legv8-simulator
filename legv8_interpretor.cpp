@@ -197,6 +197,19 @@ void stur(string source_register, string memory_register, string offset)
 	}
 }
 
+void ldur(string source_register, string memory_register, string offset)
+{
+	int source = getRegisterValue(source_register);
+	int memory_register2 = getRegisterValue(memory_register);
+	int offset = getRegisterValue(offset);
+
+	int stack_location;
+	if(memory_register2 == 28)
+	{
+		stack_location = registers[memory_register2] - offset / 8
+	}
+}
+
 void bl(string label)
 {
 	regisers[lr] = program_counter;
