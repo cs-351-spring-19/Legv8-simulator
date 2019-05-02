@@ -179,10 +179,27 @@ void subi(string source_register, string destination, string immediate_value)
 		for(int i = 0; i < offset; i++)
 		{
 			stack.push_back(0);
-			registers[source] += offset / 8;
 		}
+		registers[source] += offset / 8;
+
 	}
 }
+
+void addi(string source_register, string destination, string immediate_value)
+{
+	int source 		= 	getRegisterValue(source_register);
+	int destination = 	getRegisterValue(destination);
+	int offset 		= 	getRegisterValue(immediate_value);
+
+	// subi sp, sp, #alpha
+	if(source == 28 && destination == 28)
+	{
+
+		registers[source] -= offset / 8;
+
+	}
+}
+
 
 void stur(string source_register, string memory_register, string offset)
 {
