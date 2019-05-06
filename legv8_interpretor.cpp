@@ -7,6 +7,152 @@
 
 using namespace std;
 
+enum sepcial_registers {sp = 28, fp, lr, xzr};
+map<string, long long int> gotos;
+class Registers
+{
+
+	public:
+		long long int registers[32];
+		Registers()
+		{
+			memset(registers, 0, sizeof(long long int) * 32);
+
+		}
+
+		void setRegister(int register_name, long long int new_value)
+		{
+			// if not xzr then modify register value
+			if(register_name != 31)
+			{
+				registers[register_name] = new_value;
+			}
+		}
+
+};
+Registers register_block;
+bool zero_flag = 0;  // Z
+bool negative_flag = 0; // N
+bool overflow_flag = 0; // V
+bool carry_flag = 0; /// C
+// need something for the STK memory
+// is it just this?
+//long long int stack[255];
+deque<string> stack; // each string will have 8 characters in it, 1 byte
+//deque<long long int> stack;
+int program_counter = 0;
+
+void printContents()
+{
+	// print out flags
+	cout << "\nflags\n";
+	cout << "zero flag\n" << zero_flag << endl;
+	cout << "nagative flag\n" << negative_flag << endl;
+	cout << "overflow flag\n" << overflow_flag << endl;
+	cout << "carry flag\n" << carry_flag << endl;
+
+	/*
+  regs.insert(pair<string, long long int>("X28", 28));
+  regs.insert(pair<string, long long int>("SP",  28));
+  regs.insert(pair<string, long long int>("X29", 29));
+  regs.insert(pair<string, long long int>("FP",  29));
+  regs.insert(pair<string, long long int>("X30", 30));
+  regs.insert(pair<string, long long int>("LR",  30));
+  regs.insert(pair<string, long long int>("XZR", 31));
+  regs.insert(pair<string, long long int>("X31", 31));
+	*/
+	cout << endl;
+	cout << "registers\n";
+	for(int i = 0; i < 32; i++)
+	{
+		cout << i << " ";
+		if(i == 28)
+		{
+			cout << "SP";
+		}
+		else if(i == 29)
+		{
+			cout << "FP";
+		}
+		else if(i == 30)
+		{
+			cout << "LR";
+		}
+		else if(i == 31)
+		{
+			cout << "XZR";
+		}
+		cout << " " << register_block.registers[i] << endl;
+	}
+	cout << endl;
+	cout << "stack\n";
+	for(int i = 0; i < stack.size(); i++)
+	{
+		
+		cout << stack[i] << " " << (8 * i) << " " << i << endl;
+	}
+	cout << endl;
+	cout << "program counter\n";
+	cout << program_counter << endl;
+
+	cout << endl;
+	cout << "goto table\n";
+	for(map<string, long long int>::iterator key = gotos.begin(); key != gotos.end(); key++)
+	{
+		cout << key->first << " -> " << key->second << endl;
+	}
+	//map<string, long long int> gotos;
+
+
+}
+
+void setOverFlowFlag(long long int X, long long int Y, long long int Result)
+{
+	// IfXandY have opposite signs then V = 0. If they have the same sign, and if the result has sign different from the operands, then V = 1 else V = 0.
+	if(((X > 0 && Y < 0) ||
+	   (X < 0 && Y > 0))
+	   )
+	{
+		overflow_flag = 0;
+	}
+	else if(X > 0 && Y > 0)
+	{
+		if(Result < 0)
+		{
+			overflow_flag = 1;
+		}
+	}
+	else if (X < 0 && Y < 0)
+	{
+		if(Result > 0)
+		{
+			overflow_flag = 1;
+		}
+	}
+	else
+	{
+		overflow_flag = 0;
+	}
+}
+void setCarryFlag(long long int X, long long int Y, long long int Z)
+{
+	// To determine if there is a carry, create unsigned long long int X1, Y1 and Z1. Copy X to X1, Y to Y1, and set X1 = Y1 + Z1. If X1 < Y1 or X1 < Z1, then C = 1, else C = 0.
+	long long int X1 = X;
+	long long int Y1 = Y;
+	long long int Z1 = Z;
+	X1 = Y1 + Z1;
+	if(X1 < Y1 || X1 < Z1)
+	{
+		carry_flag = 1;
+	}
+	else
+	{
+		carry_flag = 0;
+	}
+
+}
+
+
 
 string toLower(string s)
 {
@@ -90,10 +236,10 @@ so b lr can go back to sp's original location in stack
 
 
 //Sou's Function
-int getRegisterValue(string registerName)
+int getRegisterValue(string register_name)
 {
   
-  if (registerName.length() == 0)
+  if (register_name.length() == 0)
   {
   		// so there is no out of bounds accessing
       	return 0;
@@ -102,63 +248,340 @@ int getRegisterValue(string registerName)
   map<string, int> regs;
   
   //registerName = "#3859352";
-  
-  if (registerName[0] == '#')
+  //cout << "name_to_convert -> " << register_name << endl;
+  if (register_name[0] == '#')
   {
-      std::string temp = registerName.substr(1, registerName.length() - 1 );
+  	  //cout << "convert to integer\n";
+
+      std::string temp = register_name.substr(1, register_name.length() - 1 );
+      //cout << std::stoi(temp) << endl;
       return std::stoi(temp);   
   }
+  // so values > 32 don't become register indexes
+  if(register_name[0] != 'X' &&
+  	register_name[0] != 'x' &&
+  	register_name[0] != 'S' &&
+  	register_name[0] != 's'
+  	)
+  {
+  	//cout << "convert to integer\n";
+  	std::string::size_type sz;
+  	//cout << register_name << endl;
+  	return std::stoi(register_name, &sz);
+  }
+  // convert "x" to "X"
+  //cout << register_name << endl;
+  if(register_name == "sp")
+  {
+	register_name = "SP";
+  }
+  else if(register_name == "fp")
+  {
+  	register_name = "FP";
+  }
+  else if(register_name == "lr")
+  {
+  	register_name = "LR";
+  }
+  else if(register_name == "xzr")
+  {
+  	register_name = "XZR";
+  }
+  else
+  {
+  	register_name[0] = toupper(register_name[0]);
+
+  }
+  //cout << register_name << endl;
+
+  regs.insert(pair<string, long long int>("X0",   0));
+  regs.insert(pair<string, long long int>("X1",   1));
+  regs.insert(pair<string, long long int>("X2",   2));
+  regs.insert(pair<string, long long int>("X3",   3));
+  regs.insert(pair<string, long long int>("X4",   4));
+  regs.insert(pair<string, long long int>("X5",   5));
+  regs.insert(pair<string, long long int>("X6",   6));
+  regs.insert(pair<string, long long int>("X7",   7));
+  regs.insert(pair<string, long long int>("X8",   8));
+  regs.insert(pair<string, long long int>("X9",   9));
+  regs.insert(pair<string, long long int>("X10", 10));
+  regs.insert(pair<string, long long int>("X11", 11));
+  regs.insert(pair<string, long long int>("X12", 12));
+  regs.insert(pair<string, long long int>("X13", 13));
+  regs.insert(pair<string, long long int>("X14", 14));
+  regs.insert(pair<string, long long int>("X15", 15));
+  regs.insert(pair<string, long long int>("X16", 16));
+  regs.insert(pair<string, long long int>("X17", 17));
+  regs.insert(pair<string, long long int>("X18", 18));
+  regs.insert(pair<string, long long int>("X19", 19));
+  regs.insert(pair<string, long long int>("X20", 20));
+  regs.insert(pair<string, long long int>("X21", 21));
+  regs.insert(pair<string, long long int>("X22", 22));
+  regs.insert(pair<string, long long int>("X23", 23));
+  regs.insert(pair<string, long long int>("X24", 24));
+  regs.insert(pair<string, long long int>("X25", 25));
+  regs.insert(pair<string, long long int>("X26", 26));
+  regs.insert(pair<string, long long int>("X27", 27));
+  regs.insert(pair<string, long long int>("X28", 28));
+  regs.insert(pair<string, long long int>("SP",  28));
+  regs.insert(pair<string, long long int>("X29", 29));
+  regs.insert(pair<string, long long int>("FP",  29));
+  regs.insert(pair<string, long long int>("X30", 30));
+  regs.insert(pair<string, long long int>("LR",  30));
+  regs.insert(pair<string, long long int>("XZR", 31));
+  regs.insert(pair<string, long long int>("X31", 31));
   
-  regs.insert(pair<string, int>("X0", 0));
-  regs.insert(pair<string, int>("X1", 1));
-  regs.insert(pair<string, int>("X2", 2));
-  regs.insert(pair<string, int>("X3", 3));
-  regs.insert(pair<string, int>("X4", 4));
-  regs.insert(pair<string, int>("X5", 5));
-  regs.insert(pair<string, int>("X6", 6));
-  regs.insert(pair<string, int>("X7", 7));
-  regs.insert(pair<string, int>("X8", 8));
-  regs.insert(pair<string, int>("X9", 9));
-  regs.insert(pair<string, int>("X10", 10));
-  regs.insert(pair<string, int>("X11", 11));
-  regs.insert(pair<string, int>("X12", 12));
-  regs.insert(pair<string, int>("X13", 13));
-  regs.insert(pair<string, int>("X14", 14));
-  regs.insert(pair<string, int>("X15", 15));
-  regs.insert(pair<string, int>("X16", 16));
-  regs.insert(pair<string, int>("X17", 17));
-  regs.insert(pair<string, int>("X18", 18));
-  regs.insert(pair<string, int>("X19", 19));
-  regs.insert(pair<string, int>("X20", 20));
-  regs.insert(pair<string, int>("X21", 21));
-  regs.insert(pair<string, int>("X22", 22));
-  regs.insert(pair<string, int>("X23", 23));
-  regs.insert(pair<string, int>("X24", 24));
-  regs.insert(pair<string, int>("X25", 25));
-  regs.insert(pair<string, int>("X26", 26));
-  regs.insert(pair<string, int>("X27", 27));
-  regs.insert(pair<string, int>("X28", 28));
-  regs.insert(pair<string, int>("SP", 28));
-  regs.insert(pair<string, int>("X29", 29));
-  regs.insert(pair<string, int>("FP", 29));
-  regs.insert(pair<string, int>("X30", 30));
-  regs.insert(pair<string, int>("LR", 30));
-  regs.insert(pair<string, int>("XZR", 31));
-  
-  return regs.at(registerName);
+  return regs.at(register_name);
 
 }
 
 
+void setFlags(long long int result, long long int X, long long int Y)
+{
+
+	if(result < 0)
+	{
+		negative_flag = 1;
+	}
+	if(result == 0)
+	{
+		zero_flag = 1;
+	}
+	setCarryFlag(X, Y, result);
+	setOverFlowFlag(X, Y, result);
+}
+	
 
 
+// push back the stack and stack pointer
+void subi(string destination_register, string source_register, string immediate_value)
+{
+	long long int source 		= 	getRegisterValue(source_register);
+	long long int destination = 	getRegisterValue(destination_register);
+	long long int offset 		= 	getRegisterValue(immediate_value);
+	//cout << "all converted\n";
+	//cout << source_register << " " << destination_register << " " << immediate_value << endl;
 
+	//cout << source << " " << destination << " " << offset << endl;
+	// subi sp, sp, #alpha
+	//cout << destination << endl;
 
+	if(source == 28 && destination == 28)
+	{
+		for(int i = 0; i < offset; i++)
+		{
+			stack.push_back("00000000");
+		}
+		register_block.registers[source] += offset;
 
+	}
+	else
+	{
+		register_block.registers[destination] = register_block.registers[source] - offset;
+		setFlags(register_block.registers[destination],
+			register_block.registers[source],
+			offset);
+	}
+	program_counter++;
+}
 
+// resets the stack pointer but leavs the stack untouched
+void addi(string destination_register, string source_register, string immediate_value)
+{
+	long long int source 		= 	getRegisterValue(source_register);
+	long long int destination 	= 	getRegisterValue(destination_register);
+	long long int offset 		= 	getRegisterValue(immediate_value);
 
+	//cout << destination << endl;
 
+	// subi sp, sp, #alpha
+	if(source == 28 && destination == 28)
+	{
 
+		register_block.registers[source] -= offset / 8;
+
+	}
+	else
+	{
+		register_block.registers[destination] = register_block.registers[source] + offset;
+		setFlags(register_block.registers[destination],
+			register_block.registers[source],
+			offset);
+
+	}
+	program_counter++;
+
+}
+string convertToBinary(long long int number)
+{
+	string binary_string;
+	long long int number_to_convert = number;
+	while(number_to_convert > 0)
+	{
+		int binary_digit = number_to_convert % 2;
+		if(binary_digit)
+		{
+			binary_string = "1" + binary_string;
+		}
+		else
+		{
+			binary_string = "0" + binary_string;
+		}
+		number_to_convert /= 2;
+	}
+	return binary_string;
+}
+
+// access the stack using stack pointer
+void stur(string source_register, string memory_register, string offset)
+{
+	long long int source = getRegisterValue(source_register);
+	long long int memory_register2 = getRegisterValue(memory_register);
+	long long int offset2 = getRegisterValue(offset);
+
+	cout << "here\n";
+	//int stack_location;
+	if(memory_register2 == 28)
+	{
+
+		string value_in_binary = convertToBinary(register_block.registers[source]);
+		cout << "\n" << value_in_binary << endl;
+		while(value_in_binary.size() < 64)
+		{
+			value_in_binary = "0" + value_in_binary;
+		}
+		// still having problems with this
+		// not adjusting to where the stack
+		// now it overwriting the stack data with clipped parts not getting all of the value to store
+		cout << "\n value in binary " << value_in_binary << endl;
+		for(long long int i = memory_register2 - offset2;
+				i >= 0;
+				i -= 8)
+		{
+			cout << i << endl;
+			if((i - 8) >= 0)
+			{
+				string section = value_in_binary.substr(i - 8, 8);
+
+				cout << section << endl;
+				// use + 1 cause first part of stack is $$$$$$$
+				stack[(i / 2)] = section;
+				cout << stack[(i / 2)] << endl;
+
+			}
+		}
+
+		//stack_location = register_block.registers[memory_register2] - offset2;
+
+	
+
+	}
+	program_counter++;
+	
+
+	
+
+}
+
+void ldur(string source_register, string memory_register, string offset)
+{
+	int source = getRegisterValue(source_register);
+	int memory_register2 = getRegisterValue(memory_register);
+	int offset2 = getRegisterValue(offset);
+
+	int stack_location;
+	if(memory_register2 == 28)
+	{
+		stack_location = register_block.registers[memory_register2] - offset2;
+	}
+	program_counter++;
+}
+
+// if each slot is 1 bit so 1 byte is a concatenation
+// I'm going to assume each memory slot is 8 bytes
+void bl(string label)
+{
+	register_block.registers[lr] = program_counter;
+	int goto_location = gotos[label];
+	program_counter = goto_location;
+}
+
+void br(string link_register)
+{
+	cout << "new line to move to\n";
+	cout << (register_block.registers[lr] + 1) << endl;
+	//register_block.registers[program_counter] = register_block.registers[lr] + 1;
+	program_counter = register_block.registers[lr] + 1;
+	//program_counter++;
+}
+
+void cbz(string register_name, string label)
+{
+	// if register == 0 jump to label
+	// if (RFILE[17]==0) N = j else N++;
+		// where j is the line number of the instruction with label LABEL.
+	int register_ = getRegisterValue(register_name);
+	int jump_label = gotos[label];
+	if(register_block.registers[register_] == 0)
+	{
+		program_counter = jump_label;
+	}
+	else
+	{
+		program_counter++;
+	}
+}
+
+void cmpi(string register_name, string immediate_value)
+{
+	/*
+CMP X9,X10// compare X9 to X10 and set condition codes
+
+Patterson, David A.; Hennessy, John L.. Computer Organization and Design ARM Edition (The Morgan Kaufmann Series in Computer Architecture and Design) (Page 129). Elsevier Science. Kindle Edition. 
+	*/
+	// treat like subtraction but don't store anything but the flags
+	// immediate_value - register and set flags
+	// register 1 - register/immediate value
+	int register_ = getRegisterValue(register_name);
+	long long int offset = getRegisterValue(immediate_value);
+	long long int value = register_block.registers[register_];
+	long long int result = value - offset;
+	/*if(result < 0)
+	{
+		negative_flag = 1;
+	}
+	*/
+	if(result == 0)
+	{
+		zero_flag = 1;
+	}
+	//setCarryFlag(offset, value, result);
+	//setOverFlowFlag(offset, value, result);
+	program_counter++;
+
+}
+/*
+Signed numbers Unsigned numbers Comparison Instruction CC Test Instruction CC Test = B.EQ Z=1 B.EQ Z=1 ≥ B.GE N=V B.HS C=1 < B.LT N!=V B.LO C=0 > B.GT (Z=0 & N=V) B.HI (Z=0 & C=1) ≤ B.LE ~(Z=0 & N=V) B.LS ~(Z=0 & C=1) ≠ B.NE Z=0 B.NE Z=0
+
+Patterson, David A.; Hennessy, John L.. Computer Organization and Design ARM Edition (The Morgan Kaufmann Series in Computer Architecture and Design) (Page 98). Elsevier Science. Kindle Edition. 
+page 98
+*/
+void beq(string label)
+{
+	// if flags mean last comparison resulted in an equality jump to label
+	// an equality means the zero flag is set(cause result was 0 and only A-A can produce that result)
+	int line_number = gotos[label];
+	if(zero_flag)
+	{
+		program_counter = line_number;
+	}
+	else
+	{
+		program_counter++;
+	}
+}
+
+	// addi, cbz, compi, b.eq subi, bl, ldur
 
 
 
@@ -270,17 +693,13 @@ deque<string>* split(string input)
 	}
 	return keyword_puncs;
 }
-map<string, int> gotos;
-long long int mem[255];
-long long int registers[32];
-// need something for the STK memory
-// is it just this?
-long long int stack[255];
-int program_counter = 0;
+
 int main()
 {
 
-	
+	cout << "got here\n";
+
+	stack.push_back("$$$$$$$$");
 	string tests2[] = {	"Start:", "b.eq ,label",
 						"another_label:",
 						"another_label2:",
@@ -290,7 +709,7 @@ int main()
 						"b.eq another_label",
 						"b Start"
 					};
-	
+	// addi, cbz, compi, b.eq subi, bl, ldur
 	string tests[] = {
 		"ADDI X0, X31, #12",
 		"FUN: CBZ X0, DONE",
@@ -404,6 +823,8 @@ DONE: BR X30
 		
 		"]",
 		","
+
+		// add stop
 	};
 
 	deque<deque<string>* > tests_token_lines;
@@ -471,21 +892,24 @@ DONE: BR X30
 
 	cout << endl;
 	for_each(gotos.begin(), gotos.end(), [](pair<string, int> goto_){cout << goto_.first << " " << goto_.second;});
+	cout << endl;
 	//return 0;
 
 	// i should be the program counter
 	// each deque inside tests_token_lines is a deque of the tokenzed strings from the original string
-	for(int i = 0; i < tests_token_lines.size(); i++)
+	for(int i = 0; program_counter < tests_token_lines.size(); i++)
 	{
-		cout << i << endl;
+		cout << "command " << program_counter << endl;
 		// skip over empty lines
 		/*if(tests_token_lines.at(i)->size() == 0)
 		{
 			continue;
 		}*/
-		for_each(tests_token_lines.at(i)->begin(), tests_token_lines.at(i)->end(), [](string item){cout << item << " ";});
-		string command = tests_token_lines.at(i)->at(0);
-		if(command == "b.eq")
+
+		for_each(tests_token_lines.at(program_counter)->begin(), tests_token_lines.at(program_counter)->end(), [](string item){cout << item << " ";});
+		string command = tests_token_lines.at(program_counter)->at(0);
+		deque<string>* instruction = tests_token_lines.at(program_counter);
+		/*if(command == "b.eq")
 		{
 			cout << "->b.eq instruction" << endl;
 			
@@ -495,12 +919,13 @@ DONE: BR X30
 				cout << j->first << " => " << gotos.at(tests_token_lines.at(i)->at(0)) << endl;
 			}*/
 			
-			cout << tests_token_lines.at(i)->at(1) << " -> i " << gotos.at(tests_token_lines.at(i)->at(1)) << endl;
-			int location = gotos.at(tests_token_lines.at(i)->at(1));
-			cout << "->jump to " << tests_token_lines.at(location)->at(0) << " "<< tests_token_lines.at(location)->at(1)  << " when flags say equal" << endl;
+			//cout << tests_token_lines.at(i)->at(1) << " -> i " << gotos.at(tests_token_lines.at(i)->at(1)) << endl;
+			//int location = gotos.at(tests_token_lines.at(i)->at(1));
+			//cout << "->jump to " << tests_token_lines.at(location)->at(0) << " "<< tests_token_lines.at(location)->at(1)  << " when flags say equal" << endl;
 			// run a function called b.eq to affect the memory and registers however the instruction says
 			// bEQ(split_test_i, mem, registers)
-		}
+		//}
+				/*
 		if(command == "b")
 		{
 			cout << "->b instruction" << endl;
@@ -511,34 +936,34 @@ DONE: BR X30
 				cout << j->first << " => " << gotos.at(tests_token_lines.at(i)->at(0)) << endl;
 			}*/
 			
-			cout << tests_token_lines.at(i)->at(1) << " -> i " << gotos.at(tests_token_lines.at(i)->at(1)) << endl;
+			//cout << tests_token_lines.at(i)->at(1) << " -> i " << gotos.at(tests_token_lines.at(i)->at(1)) << endl;
 
-			int location = gotos.at(tests_token_lines.at(i)->at(1));
-			cout << "->jump to " << tests_token_lines.at(location)->at(0) << " "<< tests_token_lines.at(location)->at(1) << " when flags say equal" << endl;
+			//int location = gotos.at(tests_token_lines.at(i)->at(1));
+			//cout << "->jump to " << tests_token_lines.at(location)->at(0) << " "<< tests_token_lines.at(location)->at(1) << " when flags say equal" << endl;
 			// run a function called b.eq to affect the memory and registers however the instruction says
 			// b(split_test_i, mem, registers)
-		}
-		else if(command == "add")
+		//}
+		/*else if(command == "add")
 		{
 			cout << "->add instruction" << endl;
 			cout << "->add p1 and p2 and store the result in p0" << endl;
 			// add(split_test_i, mem, registers)
 
-		}
-		else if(command == "addi")
+		}*/
+		/*else if(command == "addi")
 		{
 			// ge rid of the commas on the end of the register names
 			cout << "->addi instruction" << endl;
 			cout << "->add p1 and number and store the result in p0" << endl;
 
-		}
+		}*/
 
 		// http://www.eecs.umich.edu/courses/eecs370/eecs370.w19/resources/materials/ARM-v8-Quick-Reference-Guide.pdf
 		// https://www.ibm.com/support/knowledgecenter/en/ssw_aix_72/com.ibm.aix.alangref/idalangref_comp_immed.htm
-		else if(command == "b.eq")
+		if(command == "b.eq")
 		{
 
-			// beq(jump_label)
+			beq(instruction->at(1)/*jump_label*/);
 		}
 		else if(command == "b.lt")
 		{
@@ -579,12 +1004,12 @@ DONE: BR X30
 		else if(command == "bl")
 		{
 			// set pc to jump_label line number and store line number into link register
-			// bl(jump_label)
+			bl(instruction->at(1) /*jump_label*/);
 		}
 		else if(command == "br")
 		{
 			// set pc to register
-			// br(register)
+			br(instruction->at(1)/*register*/);
 		}
 		else if(command == "b")
 		{
@@ -611,7 +1036,7 @@ DONE: BR X30
 		}
 		else if(command == "stur")
 		{
-			// sturw(register1, register2, offset_from_stack_pointer)
+			stur(instruction->at(1), instruction->at(2), instruction->at(3)/*offset_from_stack_pointer*/);
 
 		}
 		else if(command == "subis")
@@ -619,13 +1044,14 @@ DONE: BR X30
 			// subis(register1, register2, immediate_value)
 
 		}
+
 		else if(command == "subs")
 		{
 			// subs(register1, register2, register3)
 		}
 		else if(command == "subi")
 		{
-			// subi(register1, register2, immediate_value)
+			subi(instruction->at(1), instruction->at(2), instruction->at(3) /*imediate value*/);
 		}
 		else if(command == "sub")
 		{
@@ -651,7 +1077,7 @@ DONE: BR X30
 		}
 		else if(command == "ldur")
 		{
-			// ldur(register1, register2, shift_amount)
+			ldur(instruction->at(1), instruction->at(2), instruction->at(3)/*offset_from_stack_pointer*/);
 		}
 		else if(command == "lsr")
 		{
@@ -685,11 +1111,13 @@ DONE: BR X30
 		}
 		else if(command == "addi")
 		{
-			// addi(register1, register2, immediate_value)
+			addi(instruction->at(1),  instruction->at(2), instruction->at(3)/*imediate value*/);
+
 		}
 		else if(command == "andi")
 		{
 			// andi(register1, register2, immediate_value)
+
 		}
 		else if(command == "ands")
 		{
@@ -715,7 +1143,7 @@ DONE: BR X30
 		}
 		else if(command == "cbz")
 		{
-			// cbz(register1, label)
+			cbz(instruction->at(1), instruction->at(2)/*label*/);
 		}
 		else if(command == "cmp")
 		{
@@ -723,9 +1151,37 @@ DONE: BR X30
 		}
 		else if(command == "cmpi")
 		{
-			// cmpi(register1, register2, immediate_value)
+			cmpi(instruction->at(1), instruction->at(2)/*immediate value*/);
 		}
-		
+		/*
+		"ADDI X0, X31, #12",
+		"FUN: CBZ X0, DONE",
+		"CMPI X0, #1",
+		"B.EQ DONE",
+		"SUBI SP, SP, #32",
+		"STUR X0, [SP, #0]",
+		"STUR X30, [SP, #8]",
+		"STUR X19, [SP, #16]",
+		"SUBI X0, X0, #1",
+		"BL FUN",
+		"ADDI X19, X0, #0",
+		"LDUR X0, [SP, #0]",
+		"SUBI X0, X0, #2",
+		"BL FUN",
+		"ADD X0, X0, X19",
+		"LDUR X30, [SP, #8]",
+		"LDUR X19, [SP, #16]",
+		"ADDI SP, SP, #32",
+		"DONE: BR X30"
+		*/
+		// x0 should be 144 at the end
+		if(i == 14)
+		{
+			printContents();
+			return 0;
+		}
+		printContents();
+
 		cout << endl;
 	}
 	// delete the inner deques
