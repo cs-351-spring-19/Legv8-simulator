@@ -398,7 +398,7 @@ void addi(string destination_register, string source_register, string immediate_
 	if(source == 28 && destination == 28)
 	{
 
-		register_block.registers[source] -= offset / 8;
+		register_block.registers[source] -= offset;
 
 	}
 	else
@@ -412,6 +412,33 @@ void addi(string destination_register, string source_register, string immediate_
 	program_counter++;
 
 }
+void add(string destination_register, string source_register1, string source_register2)
+{
+	long long int source1 		= 	getRegisterValue(source_register1);
+	long long int destination 	= 	getRegisterValue(destination_register);
+	long long int source2 		= 	getRegisterValue(source_register2);
+
+	//cout << destination << endl;
+
+	// subi sp, sp, #alpha
+	if(source1 == 28 && destination == 28)
+	{
+
+		register_block.registers[source1] -= source2;
+
+	}
+	else
+	{
+		register_block.registers[destination] = register_block.registers[source1] + register_block.registers[source2];
+		setFlags(register_block.registers[destination],
+			register_block.registers[source1],
+			source2);
+
+	}
+	program_counter++;
+
+}
+
 string convertToBinary(long long int number)
 {
 	string binary_string;
@@ -440,6 +467,7 @@ void stur(string source_register, string memory_register, string offset)
 	long long int offset2 = getRegisterValue(offset);
 
 	cout << "here\n";
+	cout << offset2 << endl;
 	//int stack_location;
 	if(memory_register2 == 28)
 	{
@@ -452,28 +480,17 @@ void stur(string source_register, string memory_register, string offset)
 		}
 		// still having problems with this
 		// not adjusting to where the stack
-		// now it overwriting the stack data with clipped parts not getting all of the value to store
+		// now it overwrites the stack data with clipped parts not getting all of the value to store
 		cout << "\n value in binary " << value_in_binary << endl;
-		for(long long int i = memory_register2 - offset2;
-				i >= 0;
-				i -= 8)
+		long long int bottom_sp = register_block.registers[28] - offset2 - 1;
+		for(int i = 64, j = 0; (i - 8) > 0; i -= 8, j++)
 		{
-			cout << i << endl;
-			if((i - 8) >= 0)
-			{
-				string section = value_in_binary.substr(i - 8, 8);
+				//cout << (bottom_sp - j) << " "<< value_in_binary.substr(i - 8, 8) << endl;
+				stack[bottom_sp - j] = value_in_binary.substr(i - 8, 8);
 
-				cout << section << endl;
-				// use + 1 cause first part of stack is $$$$$$$
-				stack[(i / 2)] = section;
-				cout << stack[(i / 2)] << endl;
-
-			}
+			
 		}
-
-		//stack_location = register_block.registers[memory_register2] - offset2;
-
-	
+		
 
 	}
 	program_counter++;
@@ -482,7 +499,15 @@ void stur(string source_register, string memory_register, string offset)
 	
 
 }
-
+long long int convertBinaryStringToDecimal(string binary_string)
+{
+	long long int decimal_value = 0;
+	for(int i = 0; i < binary_string.size(); i++)
+	{
+		decimal_value = (2 * decimal_value) + (binary_string[i] - 48);
+	}
+	return decimal_value;
+}
 void ldur(string source_register, string memory_register, string offset)
 {
 	int source = getRegisterValue(source_register);
@@ -492,7 +517,22 @@ void ldur(string source_register, string memory_register, string offset)
 	int stack_location;
 	if(memory_register2 == 28)
 	{
-		stack_location = register_block.registers[memory_register2] - offset2;
+		string binary_value;
+		long long int bottom_sp = register_block.registers[28] - offset2 - 1;
+		for(int i = bottom_sp; i > bottom_sp - 8; i--)
+		{
+			binary_value = stack[i] + binary_value;
+		}
+		//cout << "binary value" << endl;
+		//cout << binary_value << endl;
+		//cout << binary_value.size() << endl;
+		long long int decimal_value = convertBinaryStringToDecimal(binary_value);
+		//cout << decimal_value << endl;
+		register_block.registers[source] = decimal_value;
+		// A = slot range [sp - 1, sp - 1 - 8]
+		// convert A into decimal = B
+		// store B into registers[source]
+		//stack_location = register_block.registers[memory_register2] - offset2;
 	}
 	program_counter++;
 }
@@ -508,8 +548,8 @@ void bl(string label)
 
 void br(string link_register)
 {
-	cout << "new line to move to\n";
-	cout << (register_block.registers[lr] + 1) << endl;
+	//cout << "new line to move to\n";
+	//cout << (register_block.registers[lr] + 1) << endl;
 	//register_block.registers[program_counter] = register_block.registers[lr] + 1;
 	program_counter = register_block.registers[lr] + 1;
 	//program_counter++;
@@ -699,7 +739,7 @@ int main()
 
 	cout << "got here\n";
 
-	stack.push_back("$$$$$$$$");
+	// stack.push_back("$$$$$$$$");
 	string tests2[] = {	"Start:", "b.eq ,label",
 						"another_label:",
 						"another_label2:",
@@ -1135,7 +1175,7 @@ DONE: BR X30
 		}
 		else if(command == "add")
 		{
-			// add(register1, register2, register3)
+			add(instruction->at(1), instruction->at(2), instruction->at(3));
 		}
 		else if(command == "cbnz")
 		{
@@ -1154,28 +1194,30 @@ DONE: BR X30
 			cmpi(instruction->at(1), instruction->at(2)/*immediate value*/);
 		}
 		/*
-		"ADDI X0, X31, #12",
-		"FUN: CBZ X0, DONE",
-		"CMPI X0, #1",
-		"B.EQ DONE",
-		"SUBI SP, SP, #32",
-		"STUR X0, [SP, #0]",
-		"STUR X30, [SP, #8]",
-		"STUR X19, [SP, #16]",
-		"SUBI X0, X0, #1",
-		"BL FUN",
-		"ADDI X19, X0, #0",
-		"LDUR X0, [SP, #0]",
-		"SUBI X0, X0, #2",
-		"BL FUN",
-		"ADD X0, X0, X19",
-		"LDUR X30, [SP, #8]",
-		"LDUR X19, [SP, #16]",
-		"ADDI SP, SP, #32",
-		"DONE: BR X30"
+		0"ADDI X0, X31, #12",
+		1 "FUN: CBZ X0, DONE",
+		2 "CMPI X0, #1",
+		3 "B.EQ DONE",
+		4 "SUBI SP, SP, #32",
+		5 "STUR X0, [SP, #0]",
+		6 "STUR X30, [SP, #8]",
+		7 "STUR X19, [SP, #16]",
+		8 "SUBI X0, X0, #1",
+		9 "BL FUN",
+		10 "ADDI X19, X0, #0",
+		11 "LDUR X0, [SP, #0]",
+		12 "SUBI X0, X0, #2",
+		13 "BL FUN",
+		14 "ADD X0, X0, X19",
+		15 "LDUR X30, [SP, #8]",
+		16 "LDUR X19, [SP, #16]",
+		17 "ADDI SP, SP, #32",
+		18 "DONE: BR X30"
 		*/
 		// x0 should be 144 at the end
-		if(i == 14)
+		// x0 actually is 56
+		if(i == 350)//  105 takes us to "LDUR X0, [SP, #0]",
+			// started skipping 20 rounds at a time starting at round 117 
 		{
 			printContents();
 			return 0;
@@ -1184,6 +1226,7 @@ DONE: BR X30
 
 		cout << endl;
 	}
+
 	// delete the inner deques
 	/*
 	for(map<string, int>::iterator i = gotos.begin(); i != gotos.end(); i++)
