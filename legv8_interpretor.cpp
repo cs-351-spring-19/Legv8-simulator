@@ -110,7 +110,7 @@ void setOverFlowFlag(long long int X, long long int Y, long long int Result)
 {
 	// IfXandY have opposite signs then V = 0. If they have the same sign, and if the result has sign different from the operands, then V = 1 else V = 0.
 	if(((X > 0 && Y < 0) ||
-	   (X < 0 && Y > 0))
+	    (X < 0 && Y > 0))
 	   )
 	{
 		overflow_flag = 0;
@@ -139,6 +139,8 @@ void setCarryFlag(long long int X, long long int Y, long long int Z)
 	// To determine if there is a carry, create unsigned long long int X1, Y1 and Z1. Copy X to X1, Y to Y1, and set X1 = Y1 + Z1. If X1 < Y1 or X1 < Z1, then C = 1, else C = 0.
 	long long int X1 = X;
 	long long int Y1 = Y;
+
+	// setting Z1 to Z was not mentioned in the comment above, but nothing about how Z1 was set was present.
 	long long int Z1 = Z;
 	X1 = Y1 + Z1;
 	if(X1 < Y1 || X1 < Z1)
@@ -357,7 +359,7 @@ void setFlags(long long int result, long long int X, long long int Y)
 void subi(string destination_register, string source_register, string immediate_value)
 {
 	long long int source 		= 	getRegisterValue(source_register);
-	long long int destination = 	getRegisterValue(destination_register);
+	long long int destination 	= 	getRegisterValue(destination_register);
 	long long int offset 		= 	getRegisterValue(immediate_value);
 	//cout << "all converted\n";
 	//cout << source_register << " " << destination_register << " " << immediate_value << endl;
@@ -372,15 +374,18 @@ void subi(string destination_register, string source_register, string immediate_
 		{
 			stack.push_back("00000000");
 		}
-		register_block.registers[source] += offset;
+//				void setRegister(int register_name, long long int new_value)
+		register_block.setRegister(source, register_block.registers[source] + offset);
+
 
 	}
 	else
 	{
-		register_block.registers[destination] = register_block.registers[source] - offset;
+		register_block.setRegister(destination, register_block.registers[source] - offset);
+		//register_block.registers[destination] = register_block.registers[source] - offset;
 		setFlags(register_block.registers[destination],
-			register_block.registers[source],
-			offset);
+			     register_block.registers[source],
+			     offset);
 	}
 	program_counter++;
 }
@@ -397,13 +402,14 @@ void addi(string destination_register, string source_register, string immediate_
 	// subi sp, sp, #alpha
 	if(source == 28 && destination == 28)
 	{
-
-		register_block.registers[source] -= offset;
+		register_block.setRegister(source, register_block.registers[source] - offset);
+		//register_block.registers[source] -= offset;
 
 	}
 	else
 	{
-		register_block.registers[destination] = register_block.registers[source] + offset;
+		register_block.setRegister(destination, register_block.registers[source] + offset);
+		//register_block.registers[destination] = register_block.registers[source] + offset;
 		setFlags(register_block.registers[destination],
 			register_block.registers[source],
 			offset);
@@ -423,16 +429,17 @@ void add(string destination_register, string source_register1, string source_reg
 	// subi sp, sp, #alpha
 	if(source1 == 28 && destination == 28)
 	{
-
-		register_block.registers[source1] -= source2;
+		register_block.setRegister(source1, register_block.registers[source1] - source2);
+		//register_block.registers[source1] -= source2;
 
 	}
 	else
 	{
-		register_block.registers[destination] = register_block.registers[source1] + register_block.registers[source2];
+		register_block.setRegister(destination, register_block.registers[source1] + register_block.registers[source2]);
+		//register_block.registers[destination] = register_block.registers[source1] + register_block.registers[source2];
 		setFlags(register_block.registers[destination],
-			register_block.registers[source1],
-			source2);
+				 register_block.registers[source1],
+				 source2);
 
 	}
 	program_counter++;
@@ -462,9 +469,9 @@ string convertToBinary(long long int number)
 // access the stack using stack pointer
 void stur(string source_register, string memory_register, string offset)
 {
-	long long int source = getRegisterValue(source_register);
-	long long int memory_register2 = getRegisterValue(memory_register);
-	long long int offset2 = getRegisterValue(offset);
+	long long int source 			= getRegisterValue(source_register);
+	long long int memory_register2 	= getRegisterValue(memory_register);
+	long long int offset2 			= getRegisterValue(offset);
 
 	cout << "here\n";
 	cout << offset2 << endl;
@@ -510,9 +517,9 @@ long long int convertBinaryStringToDecimal(string binary_string)
 }
 void ldur(string source_register, string memory_register, string offset)
 {
-	int source = getRegisterValue(source_register);
-	int memory_register2 = getRegisterValue(memory_register);
-	int offset2 = getRegisterValue(offset);
+	int source 				= getRegisterValue(source_register);
+	int memory_register2 	= getRegisterValue(memory_register);
+	int offset2 			= getRegisterValue(offset);
 
 	int stack_location;
 	if(memory_register2 == 28)
@@ -528,7 +535,8 @@ void ldur(string source_register, string memory_register, string offset)
 		//cout << binary_value.size() << endl;
 		long long int decimal_value = convertBinaryStringToDecimal(binary_value);
 		//cout << decimal_value << endl;
-		register_block.registers[source] = decimal_value;
+		register_block.setRegister(source, decimal_value);
+		//register_block.registers[source] = decimal_value;
 		// A = slot range [sp - 1, sp - 1 - 8]
 		// convert A into decimal = B
 		// store B into registers[source]
