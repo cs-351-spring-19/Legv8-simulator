@@ -745,9 +745,7 @@ deque<string>* split(string input)
 int main()
 {
 
-	cout << "got here\n";
 
-	// stack.push_back("$$$$$$$$");
 	string tests2[] = {	"Start:", "b.eq ,label",
 						"another_label:",
 						"another_label2:",
