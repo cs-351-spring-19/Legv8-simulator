@@ -473,14 +473,14 @@ void stur(string source_register, string memory_register, string offset)
 	long long int memory_register2 	= getRegisterValue(memory_register);
 	long long int offset2 			= getRegisterValue(offset);
 
-	cout << "here\n";
-	cout << offset2 << endl;
+	//cout << "here\n";
+	//cout << offset2 << endl;
 	//int stack_location;
 	if(memory_register2 == 28)
 	{
 
 		string value_in_binary = convertToBinary(register_block.registers[source]);
-		cout << "\n" << value_in_binary << endl;
+		//cout << "\n" << value_in_binary << endl;
 		while(value_in_binary.size() < 64)
 		{
 			value_in_binary = "0" + value_in_binary;
@@ -488,7 +488,7 @@ void stur(string source_register, string memory_register, string offset)
 		// still having problems with this
 		// not adjusting to where the stack
 		// now it overwrites the stack data with clipped parts not getting all of the value to store
-		cout << "\n value in binary " << value_in_binary << endl;
+		//cout << "\n value in binary " << value_in_binary << endl;
 		long long int bottom_sp = register_block.registers[28] - offset2 - 1;
 		for(int i = 64, j = 0; (i - 8) > 0; i -= 8, j++)
 		{
