@@ -4,6 +4,7 @@
 #include <deque>
 #include <map>
 #include <cctype>
+#include <fstream>
 
 using namespace std;
 
@@ -47,7 +48,7 @@ void printContents()
 	// print out flags
 	cout << "\nflags\n";
 	cout << "zero flag\n" << zero_flag << endl;
-	cout << "nagative flag\n" << negative_flag << endl;
+	cout << "negative flag\n" << negative_flag << endl;
 	cout << "overflow flag\n" << overflow_flag << endl;
 	cout << "carry flag\n" << carry_flag << endl;
 
@@ -100,6 +101,72 @@ void printContents()
 	for(map<string, long long int>::iterator key = gotos.begin(); key != gotos.end(); key++)
 	{
 		cout << key->first << " -> " << key->second << endl;
+	}
+	//map<string, long long int> gotos;
+
+
+}
+
+void writeContents()
+{
+	ofstream output_file;
+  	output_file.open ("ravi.txt");
+	// print out flags
+	output_file << "\nflags\n";
+	output_file << "zero flag\n" << zero_flag << "\n";
+	output_file << "negative flag\n" << negative_flag << "\n";
+	output_file << "overflow flag\n" << overflow_flag << "\n";
+	output_file << "carry flag\n" << carry_flag << "\n";
+
+	/*
+  regs.insert(pair<string, long long int>("X28", 28));
+  regs.insert(pair<string, long long int>("SP",  28));
+  regs.insert(pair<string, long long int>("X29", 29));
+  regs.insert(pair<string, long long int>("FP",  29));
+  regs.insert(pair<string, long long int>("X30", 30));
+  regs.insert(pair<string, long long int>("LR",  30));
+  regs.insert(pair<string, long long int>("XZR", 31));
+  regs.insert(pair<string, long long int>("X31", 31));
+	*/
+	output_file << "\n";
+	output_file << "registers\n";
+	for(int i = 0; i < 32; i++)
+	{
+		output_file << i << " ";
+		if(i == 28)
+		{
+			output_file << "SP";
+		}
+		else if(i == 29)
+		{
+			output_file << "FP";
+		}
+		else if(i == 30)
+		{
+			output_file << "LR";
+		}
+		else if(i == 31)
+		{
+			output_file << "XZR";
+		}
+		output_file << " " << register_block.registers[i] << "\n";
+	}
+	output_file << "\n";
+	output_file << "stack\n";
+	for(int i = 0; i < stack.size(); i++)
+	{
+		
+		output_file << stack[i] << " " << (8 * i) << " " << i << "\n";
+	}
+	output_file << "\n";
+	output_file << "program counter\n";
+	output_file << program_counter << "\n";
+
+	output_file << "\n";
+	output_file << "goto table\n";
+	for(map<string, long long int>::iterator key = gotos.begin(); key != gotos.end(); key++)
+	{
+		output_file << key->first << " -> " << key->second << "\n";
 	}
 	//map<string, long long int> gotos;
 
@@ -515,6 +582,16 @@ long long int convertBinaryStringToDecimal(string binary_string)
 	}
 	return decimal_value;
 }
+int convertDecimalStringToDecimal(string decimal_string)
+{
+	int decimal_value = 0;
+	for(int i = 0; i < decimal_string.size(); i++)
+	{
+		decimal_value = (10 * decimal_value) + (decimal_string[i] - 48);
+	}
+	return decimal_value;
+}
+
 void ldur(string source_register, string memory_register, string offset)
 {
 	int source 				= getRegisterValue(source_register);
@@ -580,6 +657,24 @@ void cbz(string register_name, string label)
 	}
 }
 
+void cbnz(string register_name, string label)
+{
+	// if register == 0 jump to label
+	// if (RFILE[17]==0) N = j else N++;
+		// where j is the line number of the instruction with label LABEL.
+	int register_ = getRegisterValue(register_name);
+	int jump_label = gotos[label];
+	if(register_block.registers[register_] != 0)
+	{
+		program_counter = jump_label;
+	}
+	else
+	{
+		program_counter++;
+	}
+}
+
+
 void cmpi(string register_name, string immediate_value)
 {
 	/*
@@ -629,7 +724,15 @@ void beq(string label)
 	}
 }
 
-	// addi, cbz, compi, b.eq subi, bl, ldur
+
+
+void b(string jump_label)
+{
+	int line_number = gotos[jump_label];
+	program_counter = line_number;
+
+}
+
 
 
 
@@ -715,7 +818,7 @@ string getRidOfRightParenseOnRightSide(string token)
 	return token;
 }
 
-deque<string>* split(string input)
+deque<string>* split(string input, char delimiter)
 {
 	// assume all keywords+ a little punctuation are separated out by whitespace
 	deque<string>* keyword_puncs = new deque<string>;
@@ -723,7 +826,7 @@ deque<string>* split(string input)
 	int i = 0;
 	while(i < input.size())
 	{
-		if(input[i] != ' ')
+		if(input[i] != delimiter)
 		{
 			keyword_punc += tolower(input[i]);
 		}
@@ -742,61 +845,146 @@ deque<string>* split(string input)
 	return keyword_puncs;
 }
 
-int main()
+string readFile(string file_name)
 {
+	FILE* file = fopen(file_name.c_str(), "r");
+	string string_;
+	size_t n = 0;
+	int c;
 
-
-	string tests2[] = {	"Start:", "b.eq ,label",
-						"another_label:",
-						"another_label2:",
-						"label:  ldurx0[sp#8]",
-						"label_7:add x0, x0, x12",
-						"addi x0, x4, #32345678",
-						"b.eq another_label",
-						"b Start"
-					};
-	// addi, cbz, compi, b.eq subi, bl, ldur
-	string tests[] = {
-		"ADDI X0, X31, #12",
-		"FUN: CBZ X0, DONE",
-		"CMPI X0, #1",
-		"B.EQ DONE",
-		"SUBI SP, SP, #32",
-		"STUR X0, [SP, #0]",
-		"STUR X30, [SP, #8]",
-		"STUR X19, [SP, #16]",
-		"SUBI X0, X0, #1",
-		"BL FUN",
-		"ADDI X19, X0, #0",
-		"LDUR X0, [SP, #0]",
-		"SUBI X0, X0, #2",
-		"BL FUN",
-		"ADD X0, X0, X19",
-		"LDUR X30, [SP, #8]",
-		"LDUR X19, [SP, #16]",
-		"ADDI SP, SP, #32",
-		"DONE: BR X30"
-
-	};
-	for(int i = 0; i < 19; i++)
+	if(file == NULL)
 	{
-		deque<string>* tokens2 = split(tests[i]);
+	   return NULL;
+	}
+
+   fseek(file, 0, SEEK_END);
+   long f_size = ftell(file);
+
+   fseek(file, 0, SEEK_SET);
+   //string_ = (char*) malloc(f_size);
+   string_.resize(f_size);
+	c = fgetc(file);
+	while(c != EOF)
+	{
+
+		string_[n] = c;
+	    n++;
+	    c = fgetc(file);
+   }
+   //string[n] = '\0';
+
+   return string_;
+}
+// I don't have time to setup how the user can use this.
+void setupInitMem(string init_mem)
+{
+	// assume there will be an even number of numbers
+	deque<string>* numbers = split(init_mem, ' ');
+	int max_stack_index = 0;
+	// find max size of stack
+	for(int i = 0; i < numbers->size(); i++)
+	{
+		int index = convertDecimalStringToDecimal(numbers->at(i));
+		if( (i % 2 == 0) && (index > max_stack_index) )
+		{
+			max_stack_index = index;
+		}
+	}
+	// set up the stack
+	for(int i = 0; i < max_stack_index; i++)
+	{
+		stack.push_back("00000000");
+
+	}
+	// set the init values
+	for(int i = 0; i < numbers->size(); i ++)
+	{
+		// i == index in memory
+		if(i % 2 == 0)
+		{
+			string value = numbers->at(i + 1);
+			int decimal_value = convertBinaryStringToDecimal(value);
+			// assume decimal_value is 8 bits
+			string value_in_binary = convertToBinary(decimal_value);
+			stack[i] = value_in_binary;
+		}
+	}
+
+
+}
+int main(int argc, char *argv[])
+{
+	/*
+	Written by David Tauraso, Nicholas Ivanoff, Soumana S., Robert Rojes
+	*/
+	/// Do UI
+	// ask user for input file
+	//cout << "please specify the input file\n";
+	//string file_name = "test_case_1.txt";
+	//cin >> file_name;
+	// ask for memory inits
+	cout << "this program simulates Legv8 assmebly code.  It assumes you wrote valid and good code.  if you want to init things, it has to go into the assmebly code\n";
+	
+	string input = readFile(argv[1]);
+
+	deque<string>* lines = split(input, '\n');
+
+	// read in file
+	// set initial locations on the stack and registers
+	// set 1 step or go through all
+	// if have time then do some infinite loop checking
+	
+	/*for(int i = 0; i < lines->size(); i++)
+	{
+		deque<string>* tokens2 = split(lines->at(i), ' ');
 		//for_each(tokens2->begin(), tokens2->end(), [](string item){cout << item << "|";});
 		//cout << endl << endl;
 
-	}
+	}*/
 	//return 0;
 
 	/*
 ADDI X0, X31, #12 FUN: CBZ X0, DONE
 CMPI X0, #1
 B.EQ DONE
-SUBI SP, SP, #32 STUR X0, [SP, #0] STUR X30, [SP, #8] STUR X19, [SP, #16] SUBI X0, X0, #1
+SUBI SP, SP, #32
+STUR X0, [SP, #0]
+STUR X30, [SP, #8]
+STUR X19, [SP, #16]
+SUBI X0, X0, #1
 BL FUN
-ADDI X19, X0, #0 LDUR X0, [SP, #0] SUBI X0, X0, #2 BL FUN
-ADD X0, X0, X19 LDUR X30, [SP, #8] LDUR X19, [SP, #16] ADDI SP, SP, #32 // (*)
+ADDI X19, X0, #0
+LDUR X0, [SP, #0]
+SUBI X0, X0, #2
+BL FUN
+ADD X0, X0, X19
+LDUR X30, [SP, #8]
+LDUR X19, [SP, #16]
+ADDI SP, SP, #32 // (*)
 DONE: BR X30
 	*/
+/*
+FUNC: ADDI X1, XZR, #220
+ADD X2, X1, X1 
+STUR X2, [X0, #16]
+LDUR X3, [X0, #16]
+LDURB X7, [X0, #16]
+SUB X3, XZR, X7
+SUB X4, X3, X1
+STURB X4, [X1, #8]
+ADDS X4, X4, X2
+ADDI X9, XZR, #131073
+STUR X9, [X2, #32]
+LDURH X10, [X1, #10]
+STURW X9, [X2, #16]
+LDURSW X9, [X2, #16]
+CBNZ XZR, Notfun
+B Done
+
+Notfun: B FUNC
+
+Done: 
+*/
 	// make sure longer variations of the word start first
 
 	string tokens[] = {
@@ -880,21 +1068,20 @@ DONE: BR X30
 	// "#"
 	// digit
 	// x, X
-
-	for(int i = 0; i < 19; i++)
+	for(int i = 0; i < lines->size(); i++)
 	{
-		deque<string>* tokens = split(tests[i]);
+		deque<string>* tokens = split(lines->at(i), ' ');
 		deque<string>* trimmed_tokens = new deque<string>(tokens->size());
 
 		transform(tokens->begin(), tokens->end(), trimmed_tokens->begin(), [](string item){
 			return getRidOfRightParenseOnRightSide(getRidOfCommaOnRightSide(getRidOfLeftParens(item)));
 
 		});
-		for_each(trimmed_tokens->begin(), trimmed_tokens->end(), [](string item){cout << item << "|";});
+		//for_each(trimmed_tokens->begin(), trimmed_tokens->end(), [](string item){cout << item << "|";});
 
 		//cout << (tests[i].find(":") != std::string::npos) << endl;
 		// if there is only one item left and it ends in : then it's a label
-		if(tests[i].find(":") != std::string::npos)
+		if(lines->at(i).find(":") != std::string::npos)
 		{
 			// fun:|cbz|x0,|
 			// done:|br|
@@ -902,19 +1089,19 @@ DONE: BR X30
 			string label;
 			// get first element of tokens
 			label = trimmed_tokens->at(0).substr(0, trimmed_tokens->at(0).size() - 1);
-				cout << label<<"\n";
+				//cout << label<<"\n";
 
 			trimmed_tokens->pop_front();
 			if(trimmed_tokens->size() > 0)
 			{
 				gotos.insert(pair<string, int>(label, tests_token_lines.size()));
 				tests_token_lines.push_back(trimmed_tokens);
-				cout << label << " " << gotos[label] << endl;
+				//cout << label << " " << gotos[label] << endl;
 			}
 			else
 			{
 				gotos.insert(pair<string, int>(label, tests_token_lines.size()));
-				cout << label << " " << gotos[label] << endl;
+				//cout << label << " " << gotos[label] << endl;
 
 			}
 			
@@ -929,30 +1116,32 @@ DONE: BR X30
 		// save it into the goto list
 		// assuming there is no label that comes before its definition(this can be changed)
 		//for_each(split_test_i->begin(), split_test_i->end(), [](string item){cout << item << " ";});
-		cout << endl;
+		//cout << endl;
 		
 
 	}
 
+	int run_setting;
+	cout << "choose step: 1 or run: 0\n";
+	cin >> run_setting;
 	
-
-	cout << endl;
-	for_each(gotos.begin(), gotos.end(), [](pair<string, int> goto_){cout << goto_.first << " " << goto_.second;});
-	cout << endl;
+	//cout << endl;
+	//for_each(gotos.begin(), gotos.end(), [](pair<string, int> goto_){cout << goto_.first << " " << goto_.second;});
+	//cout << endl;
 	//return 0;
 
 	// i should be the program counter
 	// each deque inside tests_token_lines is a deque of the tokenzed strings from the original string
 	for(int i = 0; program_counter < tests_token_lines.size(); i++)
 	{
-		cout << "command " << program_counter << endl;
+		//cout << "command " << program_counter << endl;
 		// skip over empty lines
 		/*if(tests_token_lines.at(i)->size() == 0)
 		{
 			continue;
 		}*/
 
-		for_each(tests_token_lines.at(program_counter)->begin(), tests_token_lines.at(program_counter)->end(), [](string item){cout << item << " ";});
+		//for_each(tests_token_lines.at(program_counter)->begin(), tests_token_lines.at(program_counter)->end(), [](string item){cout << item << " ";});
 		string command = tests_token_lines.at(program_counter)->at(0);
 		deque<string>* instruction = tests_token_lines.at(program_counter);
 		/*if(command == "b.eq")
@@ -1014,38 +1203,47 @@ DONE: BR X30
 		else if(command == "b.lt")
 		{
 			// blt(jump_label)
+			program_counter++;
 		}
 		else if(command == "b.gt")
 		{
 			// bgt(jump_label)
+			program_counter++;
 		}
 		else if(command == "b.lo")
 		{
 			// blo(jump_label)
+			program_counter++;
 		}
 		else if(command == "b.hi")
 		{
 			// bhi(jump_label)
+			program_counter++;
 		}
 		else if(command == "b.ne")
 		{
 			// bne(jump_label)
+			program_counter++;
 		}
 		else if(command == "b.le")
 		{
 			// ble(jump_label)
+			program_counter++;
 		}
 		else if(command == "b.ge")
 		{
 			// bge(jump_label)
+			program_counter++;
 		}
 		else if(command == "b.ls")
 		{
 			// bls(jump_label)
+			program_counter++;
 		}
 		else if(command == "b.hs")
 		{
 			// bhs(jump_label)
+			program_counter++;
 		}
 		else if(command == "bl")
 		{
@@ -1060,24 +1258,29 @@ DONE: BR X30
 		else if(command == "b")
 		{
 			// set pc to jump_label line number or register value
-			// b(jump_label_or_register)
+			b(instruction->at(1));
+			//program_counter++;
 		}
 		else if(command == "sturb")
 		{
 			// sturb(register1, register2, offset_from_stack_pointer)
+			program_counter++;
 		}
 		else if(command == "sturw")
 		{
 			// sturw(register1, register2, offset_from_stack_pointer)
+			program_counter++;
 
 		}
 		else if(command == "sturh")
 		{
 			// sturw(register1, register2, offset_from_stack_pointer)
+			program_counter++;
 		}
 		else if(command == "stxr")
 		{
 			// sturw(register1, register2, offset_from_stack_pointer)
+			program_counter++;
 
 		}
 		else if(command == "stur")
@@ -1088,12 +1291,14 @@ DONE: BR X30
 		else if(command == "subis")
 		{
 			// subis(register1, register2, immediate_value)
+			program_counter++;
 
 		}
 
 		else if(command == "subs")
 		{
 			// subs(register1, register2, register3)
+			program_counter++;
 		}
 		else if(command == "subi")
 		{
@@ -1102,24 +1307,29 @@ DONE: BR X30
 		else if(command == "sub")
 		{
 			// sub(register1, register2, register3)
+			program_counter++;
 
 		}
 		else if(command == "ldursw")
 		{
 			// ldursw(register1, register2, offset_from_stack_pointer)
+			program_counter++;
 
 		}
 		else if(command == "ldurb")
 		{
 			// ldurb(register1, register2, offset_from_stack_pointer)
+			program_counter++;
 		}
 		else if(command == "ldurh")
 		{
 			// ldurh(register1, register2, offset_from_stack_pointer)
+			program_counter++;
 		}
 		else if(command == "ldxr")
 		{
 			// ldxr(register1, register2, offset_from_stack_pointer)
+			program_counter++;
 		}
 		else if(command == "ldur")
 		{
@@ -1128,32 +1338,39 @@ DONE: BR X30
 		else if(command == "lsr")
 		{
 			// lsr(register1, register2, shift_amount)
+			program_counter++;
 		}
 		else if(command == "lsl")
 		{
 			// lsl(register1, register2, shift_amount)
+			program_counter++;
 		}
 		else if(command == "orri")
 		{
 			// orri(register1, register2, immediate_value)
+			program_counter++;
 		}
 		else if(command == "orr")
 		{
 			// orr(register1, register2, register3)
+			program_counter++;
 		}
 		else if(command == "eori")
 		{
 			// eori(register1, register2, immediate_value)
+			program_counter++;
 
 		}
 		else if(command == "eor")
 		{
 			// eori(register1, register2, register3)
+			program_counter++;
 
 		}
 		else if(command == "andis")
 		{
 			// andis(register1, register2, immediate_value)
+			program_counter++;
 		}
 		else if(command == "addi")
 		{
@@ -1163,21 +1380,25 @@ DONE: BR X30
 		else if(command == "andi")
 		{
 			// andi(register1, register2, immediate_value)
+			program_counter++;
 
 		}
 		else if(command == "ands")
 		{
 			// ands(register1, register2, register3)
+			program_counter++;
 
 		}
 		else if(command == "adds")
 		{
 			// adds(register1, register2, register3)
+			program_counter++;
 
 		}
 		else if(command == "and")
 		{
 			// and(register1, register2, register3)
+			program_counter++;
 		}
 		else if(command == "add")
 		{
@@ -1185,15 +1406,18 @@ DONE: BR X30
 		}
 		else if(command == "cbnz")
 		{
-			// cbnz(register1, label)
+			cbnz(instruction->at(1), instruction->at(2)/*label*/);
+			program_counter++;
 		}
 		else if(command == "cbz")
 		{
 			cbz(instruction->at(1), instruction->at(2)/*label*/);
+			program_counter++;
 		}
 		else if(command == "cmp")
 		{
 			// cmp(register1, register2, register3)
+			program_counter++;
 		}
 		else if(command == "cmpi")
 		{
@@ -1220,17 +1444,74 @@ DONE: BR X30
 		17 "ADDI SP, SP, #32",
 		18 "DONE: BR X30"
 		*/
+
+		
+		/*
+		if(options->size() == 2)
+		{
+			
+		}*/
+		// step through the program
+		// works
+		if(run_setting)
+		{
+			string continuation_options;
+			string mem_index;
+			cout << "specify contents of memory\n";
+			cin >> continuation_options;
+			cin >> mem_index;
+			// example of continuation_options: RFILE 12
+			//deque<string>* options = split(continuation_options, ' ');
+			//cout << options->at(0) << endl;
+			//cout << options->at(1) << endl;
+
+			long long int index = convertBinaryStringToDecimal(mem_index);
+			if(continuation_options == "RFILE")
+			{
+				// print register[index]
+				if(index < 32)
+				{
+					cout << register_block.registers[index] << endl;
+
+				}
+
+
+			}
+			else if(continuation_options == "STK" || continuation_options == "MEM")
+			{
+				// print stack[index]
+				if(index < stack.size())
+				{
+					cout << stack[index] << endl;
+
+				}
+
+			}
+			// finish testing 
+			string continuation;
+			cout << "press any letter/word to continue. Type in STOP to end simulation\n";
+			cin >> continuation;
+
+			if(continuation == "STOP")
+			{
+				// output data to file
+				writeContents();
+				return 0;
+			}
+
+		}
+
 		// x0 should be 144 at the end
 		// x0 actually is 56
-		if(i == 350)//  105 takes us to "LDUR X0, [SP, #0]",
+		/*if(i == 350)//  105 takes us to "LDUR X0, [SP, #0]",
 			// started skipping 20 rounds at a time starting at round 117 
 		{
-			printContents();
+			//printContents();
 			return 0;
-		}
+		}*/
 		printContents();
 
-		cout << endl;
+		//cout << endl;
 	}
 
 	// delete the inner deques
